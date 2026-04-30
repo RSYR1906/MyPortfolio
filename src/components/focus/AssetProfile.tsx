@@ -146,7 +146,7 @@ export function AssetProfile({ ticker }: Props) {
       )}
 
       {loading && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="h-8 rounded bg-white/5 animate-pulse" />
           ))}
@@ -155,7 +155,7 @@ export function AssetProfile({ ticker }: Props) {
 
       {/* Price stats */}
       {priceStats.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {priceStats.map((s) => (
             <Stat key={s.label} {...s} />
           ))}
@@ -164,7 +164,7 @@ export function AssetProfile({ ticker }: Props) {
 
       {/* Profile stats */}
       {profileStats.length > 0 && (
-        <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 border-t border-white/5">
           {profileStats.map((s) => (
             <Stat key={s.label} {...s} />
           ))}

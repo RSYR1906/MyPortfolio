@@ -109,7 +109,7 @@ export function PortfolioModal({ onClose }: Props) {
     <Modal onClose={onClose}>
       <div className="bg-[#161b22] border border-white/10 rounded-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl anim-modal-in">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10">
           <h2 className="text-base font-bold text-gray-100">
             Portfolio Overview
           </h2>
@@ -121,10 +121,10 @@ export function PortfolioModal({ onClose }: Props) {
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Summary stats */}
           <div
-            className={`grid gap-3 ${hasRealized ? "grid-cols-2" : "grid-cols-3"}`}
+            className={`grid gap-3 ${hasRealized ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}
           >
             {(
               [

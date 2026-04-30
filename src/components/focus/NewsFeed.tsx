@@ -25,7 +25,7 @@ export function NewsFeed({ news, loading, error, onRetry }: Props) {
       </h3>
 
       {loading && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[...Array(9)].map((_, i) => (
             <div
               key={i}
@@ -61,7 +61,7 @@ export function NewsFeed({ news, loading, error, onRetry }: Props) {
       )}
 
       {!loading && !error && news.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {news.slice(0, 9).map((item) => (
             <a
               key={item.id}

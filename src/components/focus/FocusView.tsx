@@ -63,15 +63,17 @@ export function FocusView() {
   return (
     <div className="flex-1 flex flex-col overflow-y-auto">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#0d1117]/95 backdrop-blur-sm border-b border-white/10 px-6 py-4">
-        <div className="flex items-start justify-between">
+      <div className="sticky top-0 z-10 bg-[#0d1117]/95 backdrop-blur-sm border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex flex-col xs:flex-row xs:items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-3">
               <span
-                className="w-3 h-3 rounded-full"
+                className="w-3 h-3 rounded-full shrink-0"
                 style={{ backgroundColor: asset.accentColor }}
               />
-              <h2 className="text-xl font-bold text-gray-100">{ticker}</h2>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-100">
+                {ticker}
+              </h2>
               {asset.type === "etf" && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-400">
                   ETF
@@ -81,8 +83,8 @@ export function FocusView() {
             <p className="text-sm text-gray-500 mt-0.5 ml-6">{asset.name}</p>
           </div>
 
-          <div className="text-right">
-            <p className="text-2xl font-mono font-bold text-gray-100">
+          <div className="ml-6 xs:ml-0 xs:text-right">
+            <p className="text-xl sm:text-2xl font-mono font-bold text-gray-100">
               {priceData ? `$${priceData.price.toFixed(2)}` : "—"}
             </p>
             {priceData && (
@@ -99,7 +101,7 @@ export function FocusView() {
 
         {/* Holding summary in header */}
         {holding && pnl && (
-          <div className="mt-3 ml-6 flex items-center gap-4 text-[13px]">
+          <div className="mt-2 ml-6 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] sm:text-[13px]">
             <span className="text-gray-500">
               Holding:{" "}
               <span className="text-gray-300 font-mono">
@@ -131,7 +133,10 @@ export function FocusView() {
       </div>
 
       {/* Body — key triggers remount on ticker change, playing the fade-in animation */}
-      <div key={ticker} className="flex-1 p-6 space-y-6 anim-fade-in-up">
+      <div
+        key={ticker}
+        className="flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6 anim-fade-in-up"
+      >
         {/* Chart */}
         <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
           <div className="flex items-center justify-between mb-3">

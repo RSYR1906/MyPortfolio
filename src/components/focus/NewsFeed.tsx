@@ -19,17 +19,22 @@ function timeAgo(unix: number): string {
 
 export function NewsFeed({ news, loading, error, onRetry }: Props) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
-      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
         Latest News
       </h3>
 
       {loading && (
-        <div className="space-y-3">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="space-y-1.5">
-              <div className="h-3.5 w-3/4 bg-white/5 rounded animate-pulse" />
+        <div className="grid grid-cols-3 gap-3">
+          {[...Array(9)].map((_, i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-white/8 bg-white/[0.03] p-3 space-y-2"
+            >
+              <div className="h-3 w-3/4 bg-white/5 rounded animate-pulse" />
+              <div className="h-3 w-full bg-white/5 rounded animate-pulse" />
               <div className="h-3 w-1/2 bg-white/5 rounded animate-pulse" />
+              <div className="h-2.5 w-1/3 bg-white/5 rounded animate-pulse mt-1" />
             </div>
           ))}
         </div>
@@ -55,27 +60,32 @@ export function NewsFeed({ news, loading, error, onRetry }: Props) {
         </p>
       )}
 
-      {!loading &&
-        news.map((item) => (
-          <a
-            key={item.id}
-            href={item.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block group"
-          >
-            <p className="text-[13px] text-gray-300 group-hover:text-blue-400 transition-colors leading-snug line-clamp-2">
-              {item.headline}
-            </p>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[11px] text-gray-600">{item.source}</span>
-              <span className="text-[11px] text-gray-700">·</span>
-              <span className="text-[11px] text-gray-600">
-                {timeAgo(item.datetime)}
-              </span>
-            </div>
-          </a>
-        ))}
+      {!loading && !error && news.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {news.slice(0, 9).map((item) => (
+            <a
+              key={item.id}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col justify-between rounded-lg border border-white/8 bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/15 p-3 transition-all"
+            >
+              <p className="text-[12px] text-gray-300 group-hover:text-blue-400 transition-colors leading-snug line-clamp-3">
+                {item.headline}
+              </p>
+              <div className="flex items-center gap-1.5 mt-2.5">
+                <span className="text-[10px] text-gray-600 truncate">
+                  {item.source}
+                </span>
+                <span className="text-[10px] text-gray-700 shrink-0">·</span>
+                <span className="text-[10px] text-gray-600 shrink-0">
+                  {timeAgo(item.datetime)}
+                </span>
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -168,67 +168,45 @@ describe('removeAsset', () => {
   });
 });
 
-// ── Persistence ───────────────────────────────────────────────────────────────
+// ── loadPortfolio ─────────────────────────────────────────────────────────────
 
-describe('persistence (localStorage)', () => {
-  it('writes assets and transactions to localStorage on state change', () => {
-    useAssetStore.getState().addAsset(mockAsset('TSLA'));
-    useAssetStore.getState().addTransaction({
-      ticker: 'TSLA',
-      type: 'buy',
-      shares: 5,
-      pricePerShare: 200,
-      date: '',
-    });
+describe('loadPortfolio', () => {
+  it('bulk-replaces assets, transactions and selectedTicker', () => {
+    const newAssets = [mockAsset('TSLA'), mockAsset('NVDA')];
+    const newTxs = [
+      {
+        id: 'tx-1',
+        ticker: 'TSLA',
+        type: 'buy' as const,
+        shares: 5,
+        pricePerShare: 200,
+        date: '2024-01-01',
+      },
+    ];
+    useAssetStore.getState().loadPortfolio(newAssets, newTxs, 'TSLA');
 
-    const raw = localStorage.getItem('portfolio-data');
-    expect(raw).not.toBeNull();
-    const stored = JSON.parse(raw!);
-    expect(stored.state.assets.some((a: Asset) => a.ticker === 'TSLA')).toBe(true);
-    expect(stored.state.transactions).toHaveLength(1);
+    const state = useAssetStore.getState();
+    expect(state.assets).toHaveLength(2);
+    expect(state.assets[0].ticker).toBe('TSLA');
+    expect(state.transactions).toHaveLength(1);
+    expect(state.transactions[0].ticker).toBe('TSLA');
+    expect(state.selectedTicker).toBe('TSLA');
   });
 
-  it('does NOT persist prices to localStorage', () => {
-    useAssetStore.getState().updatePrice('AAPL', mockPrice(200));
-    const raw = localStorage.getItem('portfolio-data');
-    if (raw) {
-      const stored = JSON.parse(raw);
-      expect(stored.state.prices).toBeUndefined();
-    }
-    // If nothing was written yet that's fine too — prices alone don't trigger a write
-    // that would include them since they're not in partialize.
+  it('overwrites existing in-memory state', () => {
+    useAssetStore.getState().addAsset(mockAsset('OLD'));
+    useAssetStore.getState().loadPortfolio([mockAsset('NEW')], [], 'NEW');
+
+    const state = useAssetStore.getState();
+    expect(state.assets.some((a) => a.ticker === 'OLD')).toBe(false);
+    expect(state.assets.some((a) => a.ticker === 'NEW')).toBe(true);
   });
 
-  it('restores assets and transactions after rehydration', async () => {
-    // Populate state — persist middleware writes to localStorage
-    useAssetStore.getState().addAsset(mockAsset('NVDA'));
-    useAssetStore.getState().addTransaction({
-      ticker: 'NVDA',
-      type: 'buy',
-      shares: 2,
-      pricePerShare: 800,
-      date: '',
-    });
+  it('prices are not affected by loadPortfolio', () => {
+    useAssetStore.getState().updatePrice('AAPL', mockPrice(175));
+    useAssetStore.getState().loadPortfolio([mockAsset('GOOG')], [], 'GOOG');
 
-    // Capture the localStorage snapshot before resetStore() overwrites it
-    const savedData = localStorage.getItem('portfolio-data');
-    expect(savedData).not.toBeNull();
-
-    // Reset in-memory state to simulate a page refresh (this also writes to localStorage)
-    resetStore();
-
-    // Restore the snapshot so rehydrate() sees the NVDA data
-    localStorage.setItem('portfolio-data', savedData!);
-
-    // Verify the in-memory state no longer has NVDA
-    expect(useAssetStore.getState().assets.find((a) => a.ticker === 'NVDA')).toBeUndefined();
-    expect(useAssetStore.getState().transactions).toHaveLength(0);
-
-    // Rehydrate from localStorage — as page.tsx does on mount
-    await useAssetStore.persist.rehydrate();
-
-    expect(useAssetStore.getState().assets.find((a) => a.ticker === 'NVDA')).toBeDefined();
-    expect(useAssetStore.getState().transactions).toHaveLength(1);
-    expect(useAssetStore.getState().transactions[0].ticker).toBe('NVDA');
+    // prices are NOT reset by loadPortfolio
+    expect(useAssetStore.getState().prices['AAPL']?.price).toBe(175);
   });
 });

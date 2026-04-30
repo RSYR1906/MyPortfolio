@@ -2,8 +2,10 @@
 
 import { finnhubWsManager } from "@/lib/finnhubWs";
 import { computeHoldings, computePnL, formatPnL } from "@/lib/portfolio";
+import { createClient } from "@/lib/supabase/client";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Asset } from "@/types";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { AssetRow } from "./AssetRow";
 import { PortfolioModal } from "./PortfolioModal";
@@ -18,6 +20,7 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
   const assets = useAssetStore((s) => s.assets);
   const transactions = useAssetStore((s) => s.transactions);
   const prices = useAssetStore((s) => s.prices);
+  const router = useRouter();
 
   const holdings = useMemo(() => computeHoldings(transactions), [transactions]);
   const pnlMap = useMemo(
@@ -78,6 +81,13 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
   function handleRemove(ticker: string) {
     useAssetStore.getState().removeAsset(ticker);
     finnhubWsManager.unsubscribeTicker(ticker);
+  }
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
   }
 
   return (
@@ -185,6 +195,14 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
             </div>
           </button>
         )}
+
+        {/* Sign-out */}
+        <button
+          onClick={handleSignOut}
+          className="border-t border-white/10 px-4 py-3 w-full text-left text-xs text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] transition-colors flex items-center gap-2"
+        >
+          <span>↩</span> Sign out
+        </button>
       </aside>
 
       {portfolioOpen && (

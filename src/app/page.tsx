@@ -5,40 +5,37 @@ import { FocusView } from "@/components/focus/FocusView";
 import { AssetSidebar } from "@/components/sidebar/AssetSidebar";
 import { TradeModal } from "@/components/trade/TradeModal";
 import { useLivePrices } from "@/hooks/useLivePrices";
-import { useAssetStore } from "@/store/useAssetStore";
+import { usePortfolioSync } from "@/hooks/usePortfolioSync";
+import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [userId, setUserId] = useState<string | null>(null);
   const [tradeModalTicker, setTradeModalTicker] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Resolve the logged-in user's ID (middleware already ensures they're authed)
+  useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => setUserId(data.user?.id ?? null))
+      .catch(console.error);
+  }, []);
+
+  // Sync portfolio with Supabase (load on mount, write-back on changes)
+  const { ready } = usePortfolioSync(userId);
 
   // Boot live WebSocket price feed
   useLivePrices();
 
-  // Rehydrate persisted state from localStorage, validate selectedTicker,
-  // then fetch REST quotes for the user's full (possibly customised) asset list.
-  useEffect(() => {
-    Promise.resolve(useAssetStore.persist.rehydrate())
-      .then(() => {
-        // Ensure selectedTicker is valid after rehydration
-        const { assets, selectedTicker } = useAssetStore.getState();
-        if (
-          !selectedTicker ||
-          !assets.some((a) => a.ticker === selectedTicker)
-        ) {
-          useAssetStore.getState().setSelectedTicker(assets[0]?.ticker ?? "");
-        }
-
-        const tickers = useAssetStore
-          .getState()
-          .assets.map((a) => a.ticker)
-          .join(",");
-        return fetch(`/api/quotes?tickers=${tickers}`);
-      })
-      .then((r) => r.json())
-      .then((data) => useAssetStore.getState().initPrices(data))
-      .catch(console.error);
-  }, []);
+  // Loading screen — shown until Supabase data is ready
+  if (!ready) {
+    return (
+      <div className="flex h-full items-center justify-center bg-[#0d1117]">
+        <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full overflow-hidden">

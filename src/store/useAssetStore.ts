@@ -1,18 +1,23 @@
 import { ASSETS } from '@/lib/constants';
 import type { Asset, PriceData, Transaction } from '@/types';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 
 interface AssetStore {
-  // Dynamic asset watch-list (persisted)
+  // Dynamic asset watch-list
   assets: Asset[];
   // Currently selected ticker in the focus view
   selectedTicker: string;
   // Live price map (populated by REST init + WebSocket updates)
   prices: Record<string, PriceData>;
-  // All transactions (persisted to localStorage)
+  // All transactions
   transactions: Transaction[];
 
+  /** Bulk-load portfolio data from Supabase on mount. */
+  loadPortfolio: (
+    assets: Asset[],
+    transactions: Transaction[],
+    selectedTicker: string,
+  ) => void;
   setSelectedTicker: (ticker: string) => void;
   updatePrice: (ticker: string, data: Partial<PriceData>) => void;
   initPrices: (quotes: Record<string, PriceData>) => void;
@@ -21,71 +26,56 @@ interface AssetStore {
   removeAsset: (ticker: string) => void;
 }
 
-export const useAssetStore = create<AssetStore>()(
-  persist(
-    (set) => ({
-      assets: ASSETS,
-      selectedTicker: 'V',
-      prices: {},
-      transactions: [],
+export const useAssetStore = create<AssetStore>()((set) => ({
+  assets: ASSETS,
+  selectedTicker: 'V',
+  prices: {},
+  transactions: [],
 
-      setSelectedTicker: (ticker) => set({ selectedTicker: ticker }),
+  loadPortfolio: (assets, transactions, selectedTicker) =>
+    set({ assets, transactions, selectedTicker }),
 
-      updatePrice: (ticker, data) =>
-        set((state) => ({
-          prices: {
-            ...state.prices,
-            [ticker]: { ...(state.prices[ticker] ?? {}), ...data } as PriceData,
-          },
-        })),
+  setSelectedTicker: (ticker) => set({ selectedTicker: ticker }),
 
-      initPrices: (quotes) =>
-        set((state) => ({
-          prices: { ...state.prices, ...quotes },
-        })),
+  updatePrice: (ticker, data) =>
+    set((state) => ({
+      prices: {
+        ...state.prices,
+        [ticker]: { ...(state.prices[ticker] ?? {}), ...data } as PriceData,
+      },
+    })),
 
-      addTransaction: (tx) =>
-        set((state) => ({
-          transactions: [
-            ...state.transactions,
-            { ...tx, id: crypto.randomUUID() },
-          ],
-        })),
+  initPrices: (quotes) =>
+    set((state) => ({
+      prices: { ...state.prices, ...quotes },
+    })),
 
-      addAsset: (asset) =>
-        set((state) => {
-          if (state.assets.some((a) => a.ticker === asset.ticker)) return state;
-          return { assets: [...state.assets, asset] };
-        }),
+  addTransaction: (tx) =>
+    set((state) => ({
+      transactions: [
+        ...state.transactions,
+        { ...tx, id: crypto.randomUUID() },
+      ],
+    })),
 
-      removeAsset: (ticker) =>
-        set((state) => {
-          const remaining = state.assets.filter((a) => a.ticker !== ticker);
-          const newPrices = { ...state.prices };
-          delete newPrices[ticker];
-          return {
-            assets: remaining,
-            prices: newPrices,
-            selectedTicker:
-              state.selectedTicker === ticker
-                ? (remaining[0]?.ticker ?? '')
-                : state.selectedTicker,
-          };
-        }),
+  addAsset: (asset) =>
+    set((state) => {
+      if (state.assets.some((a) => a.ticker === asset.ticker)) return state;
+      return { assets: [...state.assets, asset] };
     }),
-    {
-      name: 'portfolio-data',
-      // Persist assets (watch-list), transactions, and last-selected ticker.
-      // Prices are ephemeral — always re-fetched fresh on load.
-      partialize: (state) => ({
-        assets: state.assets,
-        transactions: state.transactions,
-        selectedTicker: state.selectedTicker,
-      }),
-      // Prevent getServerSnapshot from returning a new object on every SSR call,
-      // which would trigger the "should be cached" infinite-loop error in React.
-      // Rehydration is triggered manually on the client in page.tsx.
-      skipHydration: true,
-    }
-  )
-);
+
+  removeAsset: (ticker) =>
+    set((state) => {
+      const remaining = state.assets.filter((a) => a.ticker !== ticker);
+      const newPrices = { ...state.prices };
+      delete newPrices[ticker];
+      return {
+        assets: remaining,
+        prices: newPrices,
+        selectedTicker:
+          state.selectedTicker === ticker
+            ? (remaining[0]?.ticker ?? '')
+            : state.selectedTicker,
+      };
+    }),
+}));

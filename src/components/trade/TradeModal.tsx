@@ -1,7 +1,7 @@
 "use client";
 
+import { Modal } from "@/components/Modal";
 import { useAssetStore } from "@/store/useAssetStore";
-import { useEffect } from "react";
 import { TradeForm } from "./TradeForm";
 
 interface Props {
@@ -12,22 +12,8 @@ interface Props {
 export function TradeModal({ ticker, onClose }: Props) {
   const asset = useAssetStore((s) => s.assets.find((a) => a.ticker === ticker));
 
-  // Close on Escape
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <Modal onClose={onClose}>
       <div className="w-full max-w-sm bg-[#161b22] border border-white/10 rounded-2xl shadow-2xl p-5 space-y-4 anim-modal-in">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -48,6 +34,6 @@ export function TradeModal({ ticker, onClose }: Props) {
 
         <TradeForm ticker={ticker} onClose={onClose} />
       </div>
-    </div>
+    </Modal>
   );
 }

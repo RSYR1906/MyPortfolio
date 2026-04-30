@@ -1,5 +1,6 @@
 "use client";
 
+import { Modal } from "@/components/Modal";
 import {
   computeHoldings,
   computePnL,
@@ -8,7 +9,7 @@ import {
   formatPnL,
 } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 
 // ── SVG donut helpers ────────────────────────────────────────────────────────
 
@@ -102,25 +103,11 @@ export function PortfolioModal({ onClose }: Props) {
     return { ticker: h.ticker, path, color, pct };
   });
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const hasRealized = Object.keys(realizedMap).length > 0;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-[#161b22] border border-white/10 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl anim-modal-in"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <Modal onClose={onClose}>
+      <div className="bg-[#161b22] border border-white/10 rounded-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl anim-modal-in">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 className="text-base font-bold text-gray-100">
@@ -320,6 +307,6 @@ export function PortfolioModal({ onClose }: Props) {
           )}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

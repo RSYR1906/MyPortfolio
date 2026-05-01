@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   try {
     const profile = await finnhubFetch<FinnhubProfile>('/stock/profile2', { symbol }, 3600);
     return NextResponse.json({ ...profile, isEtf: false });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
   }
 }

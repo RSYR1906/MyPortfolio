@@ -14,8 +14,9 @@ import { useEffect, useRef, useState } from 'react';
  * Returns `ready: true` once the initial load is complete so the parent
  * can gate rendering until data is available.
  */
-export function usePortfolioSync(userId: string | null): { ready: boolean } {
+export function usePortfolioSync(userId: string | null): { ready: boolean; error: string | null } {
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const initialLoadDone = useRef(false);
 
   // ── Initial load ────────────────────────────────────────────────────────────
@@ -70,7 +71,11 @@ export function usePortfolioSync(userId: string | null): { ready: boolean } {
       setReady(true);
     }
 
-    load().catch(console.error);
+    load().catch((err) => {
+      console.error(err);
+      setError('Failed to load portfolio. Please refresh.');
+      setReady(true); // unblock the loading spinner
+    });
   }, [userId]);
 
   // ── Write-back subscription ─────────────────────────────────────────────────
@@ -83,7 +88,7 @@ export function usePortfolioSync(userId: string | null): { ready: boolean } {
       // Guard: don't write during the initial load itself
       if (!initialLoadDone.current) return;
 
-      // New transaction added (transactions are append-only)
+      // New transaction added
       if (state.transactions.length > prevState.transactions.length) {
         const newTx = state.transactions[state.transactions.length - 1];
         supabase
@@ -100,6 +105,23 @@ export function usePortfolioSync(userId: string | null): { ready: boolean } {
           .then(({ error }) => {
             if (error) console.error('Failed to save transaction:', error);
           });
+      }
+
+      // Transaction deleted
+      if (state.transactions.length < prevState.transactions.length) {
+        const prevIds = new Set(prevState.transactions.map((t) => t.id));
+        const currIds = new Set(state.transactions.map((t) => t.id));
+        for (const id of prevIds) {
+          if (!currIds.has(id)) {
+            supabase
+              .from('transactions')
+              .delete()
+              .eq('id', id)
+              .then(({ error }) => {
+                if (error) console.error('Failed to delete transaction:', error);
+              });
+          }
+        }
       }
 
       // Asset list or selected ticker changed → upsert portfolio row
@@ -124,5 +146,5 @@ export function usePortfolioSync(userId: string | null): { ready: boolean } {
     return unsub;
   }, [userId]);
 
-  return { ready };
+  return { ready, error };
 }

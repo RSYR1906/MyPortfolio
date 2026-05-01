@@ -1,12 +1,13 @@
 "use client";
 
+import { usePortfolio } from "@/hooks/usePortfolio";
 import { finnhubWsManager } from "@/lib/finnhubWs";
-import { computeHoldings, computePnL, formatPnL } from "@/lib/portfolio";
+import { formatPnL } from "@/lib/portfolio";
 import { createClient } from "@/lib/supabase/client";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Asset } from "@/types";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AssetRow } from "./AssetRow";
 import { PortfolioModal } from "./PortfolioModal";
 
@@ -18,24 +19,9 @@ interface Props {
 
 export function AssetSidebar({ onTradeClick, onClose }: Props) {
   const assets = useAssetStore((s) => s.assets);
-  const transactions = useAssetStore((s) => s.transactions);
-  const prices = useAssetStore((s) => s.prices);
   const router = useRouter();
 
-  const holdings = useMemo(() => computeHoldings(transactions), [transactions]);
-  const pnlMap = useMemo(
-    () => computePnL(holdings, prices),
-    [holdings, prices],
-  );
-
-  const totalValue = useMemo(
-    () => Object.values(pnlMap).reduce((sum, p) => sum + p.currentValue, 0),
-    [pnlMap],
-  );
-  const totalCost = useMemo(
-    () => Object.values(holdings).reduce((sum, h) => sum + h.totalCost, 0),
-    [holdings],
-  );
+  const { holdings, pnlMap, totalValue, totalCost } = usePortfolio();
   const totalPnL = totalValue - totalCost;
 
   const [portfolioOpen, setPortfolioOpen] = useState(false);
@@ -92,7 +78,10 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
 
   return (
     <>
-      <aside className="w-64 shrink-0 flex flex-col h-full border-r border-white/10 bg-[#0d1117]">
+      <aside
+        id="asset-sidebar"
+        className="w-full max-w-xs md:w-64 shrink-0 flex flex-col h-full border-r border-white/10 bg-[#0d1117]"
+      >
         {/* Header */}
         <div className="px-4 py-4 border-b border-white/10 flex items-start justify-between">
           <div>

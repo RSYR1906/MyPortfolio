@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
     };
 
     return NextResponse.json(asset);
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Failed to validate ticker' }, { status: 500 });
   }
 }

@@ -13,8 +13,10 @@ export function TransactionHistory({ ticker }: Props) {
   // body. An inline .filter() inside the selector creates a new array on every
   // getServerSnapshot call, which triggers React's infinite-loop guard.
   const allTransactions = useAssetStore((s) => s.transactions);
+  const removeTransaction = useAssetStore((s) => s.removeTransaction);
   const transactions = allTransactions.filter((t) => t.ticker === ticker);
   const [showAll, setShowAll] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Realized P&L for this ticker
   const realizedMap = useMemo(
@@ -81,11 +83,12 @@ export function TransactionHistory({ ticker }: Props) {
                   <th className="text-right pb-2 font-medium">Shares</th>
                   <th className="text-right pb-2 font-medium">Price</th>
                   <th className="text-right pb-2 font-medium">Total</th>
+                  <th className="pb-2" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
                 {visible.map((tx) => (
-                  <tr key={tx.id}>
+                  <tr key={tx.id} className="group/row">
                     <td className="py-2 text-gray-500 whitespace-nowrap pr-4">
                       {formatDate(tx.date)}
                     </td>
@@ -108,6 +111,35 @@ export function TransactionHistory({ ticker }: Props) {
                     </td>
                     <td className="py-2 text-right font-mono text-gray-200">
                       ${(tx.shares * tx.pricePerShare).toFixed(2)}
+                    </td>
+                    <td className="py-2 pl-3">
+                      {confirmDeleteId === tx.id ? (
+                        <span className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              removeTransaction(tx.id);
+                              setConfirmDeleteId(null);
+                            }}
+                            className="text-[11px] text-red-400 hover:text-red-300"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-[11px] text-gray-500 hover:text-gray-300"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(tx.id)}
+                          className="text-[11px] text-gray-600 hover:text-red-400 opacity-0 group-hover/row:opacity-100 sm:opacity-100 transition-opacity"
+                          aria-label="Delete transaction"
+                        >
+                          ×
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

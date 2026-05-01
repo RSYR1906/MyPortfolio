@@ -4,15 +4,11 @@ import { TradeForm } from "@/components/trade/TradeForm";
 import { TransactionHistory } from "@/components/trade/TransactionHistory";
 import { useCandles } from "@/hooks/useCandles";
 import { useNews } from "@/hooks/useNews";
-import {
-  computeHoldings,
-  computePnL,
-  formatPct,
-  formatPnL,
-} from "@/lib/portfolio";
+import { usePortfolio } from "@/hooks/usePortfolio";
+import { formatPct, formatPnL } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Timeframe } from "@/types";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AssetProfile } from "./AssetProfile";
 import { NewsFeed } from "./NewsFeed";
 import { PriceChart } from "./PriceChart";
@@ -21,11 +17,13 @@ import { TimeframeSelector } from "./TimeframeSelector";
 export function FocusView() {
   const ticker = useAssetStore((s) => s.selectedTicker);
   const priceData = useAssetStore((s) => s.prices[ticker]);
-  const transactions = useAssetStore((s) => s.transactions);
-  const prices = useAssetStore((s) => s.prices);
 
   const asset = useAssetStore((s) => s.assets.find((a) => a.ticker === ticker));
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
+
+  const { holdings, pnlMap } = usePortfolio();
+  const holding = holdings[ticker];
+  const pnl = pnlMap[ticker];
 
   const {
     candles,
@@ -39,14 +37,6 @@ export function FocusView() {
     error: newsError,
     retry: retryNews,
   } = useNews(ticker, asset?.type === "etf");
-
-  const holdings = useMemo(() => computeHoldings(transactions), [transactions]);
-  const pnlMap = useMemo(
-    () => computePnL(holdings, prices),
-    [holdings, prices],
-  );
-  const holding = holdings[ticker];
-  const pnl = pnlMap[ticker];
 
   const isPositive = (priceData?.changePct ?? 0) >= 0;
 
@@ -64,7 +54,7 @@ export function FocusView() {
     <div className="flex-1 flex flex-col overflow-y-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#0d1117]/95 backdrop-blur-sm border-b border-white/10 px-4 sm:px-6 py-3 sm:py-4">
-        <div className="flex flex-col xs:flex-row xs:items-start justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-3">
               <span
@@ -83,7 +73,7 @@ export function FocusView() {
             <p className="text-sm text-gray-500 mt-0.5 ml-6">{asset.name}</p>
           </div>
 
-          <div className="ml-6 xs:ml-0 xs:text-right">
+          <div className="ml-6 sm:ml-0 sm:text-right">
             <p className="text-xl sm:text-2xl font-mono font-bold text-gray-100">
               {priceData ? `$${priceData.price.toFixed(2)}` : "—"}
             </p>

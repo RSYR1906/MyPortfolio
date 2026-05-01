@@ -106,11 +106,14 @@ export function PortfolioModal({ onClose }: Props) {
   const hasRealized = Object.keys(realizedMap).length > 0;
 
   return (
-    <Modal onClose={onClose}>
+    <Modal onClose={onClose} labelId="portfolio-modal-title">
       <div className="bg-[#161b22] border border-white/10 rounded-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl anim-modal-in">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10">
-          <h2 className="text-base font-bold text-gray-100">
+          <h2
+            id="portfolio-modal-title"
+            className="text-base font-bold text-gray-100"
+          >
             Portfolio Overview
           </h2>
           <button
@@ -239,8 +242,8 @@ export function PortfolioModal({ onClose }: Props) {
                         "Avg Cost",
                         "Price",
                         "Value",
-                        "Unrealized",
-                        "Realized",
+                        "Unrlzd P&L",
+                        "Rlzd P&L",
                       ].map((h, i) => (
                         <th
                           key={h}

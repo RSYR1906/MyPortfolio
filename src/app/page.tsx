@@ -23,7 +23,7 @@ export default function Home() {
   }, []);
 
   // Sync portfolio with Supabase (load on mount, write-back on changes)
-  const { ready } = usePortfolioSync(userId);
+  const { ready, error: syncError } = usePortfolioSync(userId);
 
   // Boot live WebSocket price feed
   useLivePrices();
@@ -33,6 +33,21 @@ export default function Home() {
     return (
       <div className="flex h-full items-center justify-center bg-[#0d1117]">
         <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Load error — Supabase unreachable or auth failure
+  if (syncError) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 bg-[#0d1117] p-6 text-center">
+        <p className="text-sm text-red-400">{syncError}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm text-white transition-colors"
+        >
+          Reload
+        </button>
       </div>
     );
   }
@@ -68,6 +83,8 @@ export default function Home() {
           <button
             onClick={() => setSidebarOpen(true)}
             aria-label="Open sidebar"
+            aria-expanded={sidebarOpen}
+            aria-controls="asset-sidebar"
             className="text-gray-400 hover:text-gray-200 transition-colors text-xl leading-none"
           >
             ☰

@@ -24,9 +24,17 @@ class FinnhubWsManager {
   private destroyed = false;
 
   connect(token: string, tickers: string[]) {
+    // Close any existing socket before opening a new one (guards against
+    // React Strict Mode double-mount and repeated calls).
+    if (this.ws) {
+      this.ws.onclose = null; // prevent scheduleReconnect firing
+      this.ws.close();
+      this.ws = null;
+    }
     this.token = token;
     this.tickers = tickers;
     this.destroyed = false;
+    this.reconnectAttempts = 0;
     this.openSocket();
   }
 

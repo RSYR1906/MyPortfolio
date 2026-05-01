@@ -52,12 +52,20 @@ export function AssetRow({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
       className={`group flex flex-col gap-1 px-3 py-3 cursor-pointer transition-colors border-l-2 ${
         isSelected
           ? "bg-white/5 border-blue-400"
           : "border-transparent hover:bg-white/[0.03] hover:border-white/20"
       }`}
       onClick={() => setSelectedTicker(ticker)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setSelectedTicker(ticker);
+        }
+      }}
     >
       <div className="flex items-center justify-between">
         {/* Left: accent dot + ticker */}
@@ -127,8 +135,8 @@ export function AssetRow({
         </div>
       )}
 
-      {/* Quick actions (visible on hover) */}
-      <div className="mt-1 ml-4 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Quick actions — always visible on mobile, hover-reveal on desktop */}
+      <div className="mt-1 ml-4 flex items-center gap-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         <button
           onClick={(e) => {
             e.stopPropagation();

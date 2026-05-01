@@ -8,6 +8,8 @@ import {
   CrosshairMode,
   LineSeries,
   type IChartApi,
+  type ISeriesApi,
+  type SeriesType,
   type UTCTimestamp,
 } from "lightweight-charts";
 import { useEffect, useRef, useState } from "react";
@@ -29,8 +31,7 @@ export function PriceChart({
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const seriesRef = useRef<any>(null);
+  const seriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
   const [chartType, setChartType] = useState<ChartType>("line");
 
   // Create chart once on mount

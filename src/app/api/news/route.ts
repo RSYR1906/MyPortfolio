@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
         }))
       : [];
     return NextResponse.json(news);
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch news' }, { status: 500 });
   }
 }

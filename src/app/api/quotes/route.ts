@@ -23,9 +23,16 @@ export async function GET(req: NextRequest) {
 
   // Accept ?tickers=V,AMD,GLD or fall back to the default asset list
   const tickersParam = req.nextUrl.searchParams.get('tickers');
-  const tickers = tickersParam
+  const raw = tickersParam
     ? tickersParam.split(',').map((t) => t.trim()).filter(Boolean)
     : ASSETS.map((a) => a.ticker);
+
+  // Validate: each ticker must be 1-12 uppercase alphanumeric chars (+ dot for BRK.B)
+  const TICKER_RE = /^[A-Z0-9.]{1,12}$/;
+  const tickers = raw.filter((t) => TICKER_RE.test(t.toUpperCase()));
+  if (tickers.length === 0) {
+    return NextResponse.json({ error: 'No valid ticker symbols provided' }, { status: 400 });
+  }
 
   try {
     const results = await Promise.all(
@@ -44,7 +51,7 @@ export async function GET(req: NextRequest) {
       })
     );
     return NextResponse.json(Object.fromEntries(results));
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch quotes' }, { status: 500 });
   }
 }

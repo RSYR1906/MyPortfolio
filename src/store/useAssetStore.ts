@@ -22,13 +22,14 @@ interface AssetStore {
   updatePrice: (ticker: string, data: Partial<PriceData>) => void;
   initPrices: (quotes: Record<string, PriceData>) => void;
   addTransaction: (tx: Omit<Transaction, 'id'>) => void;
+  removeTransaction: (id: string) => void;
   addAsset: (asset: Asset) => void;
   removeAsset: (ticker: string) => void;
 }
 
 export const useAssetStore = create<AssetStore>()((set) => ({
   assets: ASSETS,
-  selectedTicker: 'V',
+  selectedTicker: ASSETS[0]?.ticker ?? '',
   prices: {},
   transactions: [],
 
@@ -58,6 +59,11 @@ export const useAssetStore = create<AssetStore>()((set) => ({
       ],
     })),
 
+  removeTransaction: (id) =>
+    set((state) => ({
+      transactions: state.transactions.filter((t) => t.id !== id),
+    })),
+
   addAsset: (asset) =>
     set((state) => {
       if (state.assets.some((a) => a.ticker === asset.ticker)) return state;
@@ -72,6 +78,8 @@ export const useAssetStore = create<AssetStore>()((set) => ({
       return {
         assets: remaining,
         prices: newPrices,
+        // Cascade-delete all transactions for this ticker
+        transactions: state.transactions.filter((t) => t.ticker !== ticker),
         selectedTicker:
           state.selectedTicker === ticker
             ? (remaining[0]?.ticker ?? '')

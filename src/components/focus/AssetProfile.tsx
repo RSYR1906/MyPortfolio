@@ -1,5 +1,6 @@
 "use client";
 
+import { useCurrency } from "@/hooks/useCurrency";
 import { ETF_METADATA } from "@/lib/constants";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useEffect, useState } from "react";
@@ -52,6 +53,8 @@ export function AssetProfile({ ticker }: Props) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const { symbol, convert } = useCurrency();
+
   useEffect(() => {
     if (!ticker) return;
 
@@ -85,13 +88,22 @@ export function AssetProfile({ ticker }: Props) {
 
   const priceStats: StatItem[] = price
     ? [
-        { label: "Open", value: `$${price.open.toFixed(2)}` },
-        { label: "Day High", value: `$${price.high.toFixed(2)}` },
-        { label: "Day Low", value: `$${price.low.toFixed(2)}` },
-        { label: "Prev Close", value: `$${price.prevClose.toFixed(2)}` },
+        { label: "Open", value: `${symbol}${convert(price.open).toFixed(2)}` },
+        {
+          label: "Day High",
+          value: `${symbol}${convert(price.high).toFixed(2)}`,
+        },
+        {
+          label: "Day Low",
+          value: `${symbol}${convert(price.low).toFixed(2)}`,
+        },
+        {
+          label: "Prev Close",
+          value: `${symbol}${convert(price.prevClose).toFixed(2)}`,
+        },
         {
           label: "Change",
-          value: `${price.change >= 0 ? "+" : ""}$${price.change.toFixed(2)}`,
+          value: `${price.change >= 0 ? "+" : ""}${symbol}${Math.abs(convert(price.change)).toFixed(2)}`,
         },
         {
           label: "Change %",

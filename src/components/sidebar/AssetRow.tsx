@@ -1,6 +1,7 @@
 "use client";
 
-import { formatPct, formatPnL } from "@/lib/portfolio";
+import { useCurrency } from "@/hooks/useCurrency";
+import { formatPct } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Asset, Holding, PnL } from "@/types";
 import { useEffect, useRef, useState } from "react";
@@ -30,6 +31,8 @@ export function AssetRow({
 
   const isSelected = selectedTicker === ticker;
   const isPositive = (changePct ?? 0) >= 0;
+
+  const { fmt, fmtPnL } = useCurrency();
 
   // Flash animation on price change
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
@@ -102,7 +105,7 @@ export function AssetRow({
                   : "text-gray-100"
             }`}
           >
-            {price !== undefined ? `$${price.toFixed(2)}` : "—"}
+            {price !== undefined ? fmt(price) : "—"}
           </span>
           <span
             className={`text-[11px] font-mono ${
@@ -130,7 +133,7 @@ export function AssetRow({
               pnl.unrealizedPnL >= 0 ? "text-emerald-400" : "text-red-400"
             }`}
           >
-            {formatPnL(pnl.unrealizedPnL)} ({formatPct(pnl.unrealizedPnLPct)})
+            {fmtPnL(pnl.unrealizedPnL)} ({formatPct(pnl.unrealizedPnLPct)})
           </span>
         </div>
       )}

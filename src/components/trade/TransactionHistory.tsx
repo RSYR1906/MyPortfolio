@@ -1,6 +1,7 @@
 "use client";
 
-import { computeRealizedPnL, formatPct, formatPnL } from "@/lib/portfolio";
+import { useCurrency } from "@/hooks/useCurrency";
+import { computeRealizedPnL, formatPct } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useMemo, useState } from "react";
 
@@ -17,6 +18,8 @@ export function TransactionHistory({ ticker }: Props) {
   const transactions = allTransactions.filter((t) => t.ticker === ticker);
   const [showAll, setShowAll] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const { fmt, fmtPnL } = useCurrency();
 
   // Realized P&L for this ticker
   const realizedMap = useMemo(
@@ -69,7 +72,7 @@ export function TransactionHistory({ ticker }: Props) {
                     : "text-red-400"
                 }`}
               >
-                {formatPnL(realized.realizedPnL)} (
+                {fmtPnL(realized.realizedPnL)} (
                 {formatPct(realized.realizedPnLPct)})
               </span>
             </div>
@@ -107,10 +110,10 @@ export function TransactionHistory({ ticker }: Props) {
                       {tx.shares % 1 === 0 ? tx.shares : tx.shares.toFixed(4)}
                     </td>
                     <td className="py-2 text-right font-mono text-gray-300">
-                      ${tx.pricePerShare.toFixed(2)}
+                      {fmt(tx.pricePerShare)}
                     </td>
                     <td className="py-2 text-right font-mono text-gray-200">
-                      ${(tx.shares * tx.pricePerShare).toFixed(2)}
+                      {fmt(tx.shares * tx.pricePerShare)}
                     </td>
                     <td className="py-2 pl-3">
                       {confirmDeleteId === tx.id ? (

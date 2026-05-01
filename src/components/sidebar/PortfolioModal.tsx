@@ -1,12 +1,12 @@
 "use client";
 
 import { Modal } from "@/components/Modal";
+import { useCurrency } from "@/hooks/useCurrency";
 import {
   computeHoldings,
   computePnL,
   computeRealizedPnL,
   formatPct,
-  formatPnL,
 } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useMemo } from "react";
@@ -105,6 +105,8 @@ export function PortfolioModal({ onClose }: Props) {
 
   const hasRealized = Object.keys(realizedMap).length > 0;
 
+  const { symbol, fmt, fmtPnL, convert } = useCurrency();
+
   return (
     <Modal onClose={onClose} labelId="portfolio-modal-title">
       <div className="bg-[#161b22] border border-white/10 rounded-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl anim-modal-in">
@@ -131,11 +133,11 @@ export function PortfolioModal({ onClose }: Props) {
           >
             {(
               [
-                { label: "Total Value", value: `$${totalValue.toFixed(2)}` },
-                { label: "Total Cost", value: `$${totalCost.toFixed(2)}` },
+                { label: "Total Value", value: fmt(totalValue) },
+                { label: "Total Cost", value: fmt(totalCost) },
                 {
                   label: "Unrealized P&L",
-                  value: `${formatPnL(totalUnrealizedPnL)} (${formatPct(totalUnrealizedPnLPct)})`,
+                  value: `${fmtPnL(totalUnrealizedPnL)} (${formatPct(totalUnrealizedPnLPct)})`,
                   color:
                     totalUnrealizedPnL >= 0
                       ? "text-emerald-400"
@@ -145,7 +147,7 @@ export function PortfolioModal({ onClose }: Props) {
                   ? [
                       {
                         label: "Realized P&L",
-                        value: formatPnL(totalRealizedPnL),
+                        value: fmtPnL(totalRealizedPnL),
                         color:
                           totalRealizedPnL >= 0
                             ? "text-emerald-400"
@@ -209,7 +211,8 @@ export function PortfolioModal({ onClose }: Props) {
                       fontFamily: "monospace",
                     }}
                   >
-                    ${totalValue.toFixed(0)}
+                    ${symbol}
+                    {convert(totalValue).toFixed(0)}
                   </text>
                 </svg>
 
@@ -270,13 +273,13 @@ export function PortfolioModal({ onClose }: Props) {
                               : h.netShares.toFixed(4)}
                           </td>
                           <td className="py-2 text-right font-mono pr-3">
-                            ${h.avgCostBasis.toFixed(2)}
+                            {fmt(h.avgCostBasis)}
                           </td>
                           <td className="py-2 text-right font-mono pr-3">
-                            {price !== undefined ? `$${price.toFixed(2)}` : "—"}
+                            {price !== undefined ? fmt(price) : "—"}
                           </td>
                           <td className="py-2 text-right font-mono pr-3">
-                            {pnl ? `$${pnl.currentValue.toFixed(2)}` : "—"}
+                            {pnl ? fmt(pnl.currentValue) : "—"}
                           </td>
                           <td
                             className={`py-2 text-right font-mono pr-3 ${
@@ -286,7 +289,7 @@ export function PortfolioModal({ onClose }: Props) {
                             }`}
                           >
                             {pnl
-                              ? `${formatPnL(pnl.unrealizedPnL)} (${formatPct(pnl.unrealizedPnLPct)})`
+                              ? `${fmtPnL(pnl.unrealizedPnL)} (${formatPct(pnl.unrealizedPnLPct)})`
                               : "—"}
                           </td>
                           <td
@@ -298,7 +301,7 @@ export function PortfolioModal({ onClose }: Props) {
                                 : "text-gray-600"
                             }`}
                           >
-                            {realized ? formatPnL(realized.realizedPnL) : "—"}
+                            {realized ? fmtPnL(realized.realizedPnL) : "—"}
                           </td>
                         </tr>
                       );

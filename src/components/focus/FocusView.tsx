@@ -3,9 +3,10 @@
 import { TradeForm } from "@/components/trade/TradeForm";
 import { TransactionHistory } from "@/components/trade/TransactionHistory";
 import { useCandles } from "@/hooks/useCandles";
+import { useCurrency } from "@/hooks/useCurrency";
 import { useNews } from "@/hooks/useNews";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { formatPct, formatPnL } from "@/lib/portfolio";
+import { formatPct } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Timeframe } from "@/types";
 import { useState } from "react";
@@ -24,6 +25,8 @@ export function FocusView() {
   const { holdings, pnlMap } = usePortfolio();
   const holding = holdings[ticker];
   const pnl = pnlMap[ticker];
+
+  const { symbol, fmt, fmtPnL, convert } = useCurrency();
 
   const {
     candles,
@@ -75,13 +78,15 @@ export function FocusView() {
 
           <div className="ml-6 sm:ml-0 sm:text-right">
             <p className="text-xl sm:text-2xl font-mono font-bold text-gray-100">
-              {priceData ? `$${priceData.price.toFixed(2)}` : "—"}
+              {priceData ? fmt(priceData.price) : "—"}
             </p>
             {priceData && (
               <p
                 className={`text-sm font-mono ${isPositive ? "text-emerald-400" : "text-red-400"}`}
               >
-                {isPositive ? "+" : ""}${priceData.change.toFixed(2)} (
+                {isPositive ? "+" : ""}
+                {symbol}
+                {Math.abs(convert(priceData.change)).toFixed(2)} (
                 {isPositive ? "+" : ""}
                 {priceData.changePct.toFixed(2)}%)
               </p>
@@ -104,19 +109,19 @@ export function FocusView() {
             <span className="text-gray-500">
               Avg cost:{" "}
               <span className="text-gray-300 font-mono">
-                ${holding.avgCostBasis.toFixed(2)}
+                {fmt(holding.avgCostBasis)}
               </span>
             </span>
             <span className="text-gray-500">
               Value:{" "}
               <span className="text-gray-300 font-mono">
-                ${pnl.currentValue.toFixed(2)}
+                {fmt(pnl.currentValue)}
               </span>
             </span>
             <span
               className={`font-mono font-semibold ${pnl.unrealizedPnL >= 0 ? "text-emerald-400" : "text-red-400"}`}
             >
-              {formatPnL(pnl.unrealizedPnL)} ({formatPct(pnl.unrealizedPnLPct)})
+              {fmtPnL(pnl.unrealizedPnL)} ({formatPct(pnl.unrealizedPnLPct)})
             </span>
           </div>
         )}

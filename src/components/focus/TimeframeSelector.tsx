@@ -11,12 +11,12 @@ interface Props {
 
 export function TimeframeSelector({ value, onChange }: Props) {
   return (
-    <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 flex-wrap">
+    <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 overflow-x-auto no-scrollbar">
       {TIMEFRAMES.map((tf) => (
         <button
           key={tf}
           onClick={() => onChange(tf)}
-          className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+          className={`shrink-0 px-2 sm:px-3 py-1 text-xs font-medium rounded-md transition-colors ${
             value === tf
               ? "bg-blue-500 text-white shadow-sm"
               : "text-gray-400 hover:text-gray-200"

@@ -68,3 +68,33 @@ body {
 .anim-modal-in {
   animation: modal-scale-in 0.15s ease-out both;
 }
+
+/* ── Mobile-first utilities ──────────────────────────────────────────────── */
+
+/* Prevent double-tap zoom on buttons / links without disabling pinch-zoom */
+html {
+  touch-action: manipulation;
+}
+
+/* Smooth scrolling (respects reduced-motion) */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* Prevent iOS auto-zoom when focusing inputs (requires font-size ≥ 16px) */
+@media screen and (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Hide scrollbars while preserving scroll functionality */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

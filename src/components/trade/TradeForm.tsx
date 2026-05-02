@@ -1,5 +1,6 @@
 "use client";
 
+import { useCurrency } from "@/hooks/useCurrency";
 import { netSharesFor } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Transaction } from "@/types";
@@ -18,6 +19,8 @@ export function TradeForm({ ticker, onClose }: Props) {
   const transactions = useAssetStore((s) => s.transactions);
 
   const heldShares = netSharesFor(transactions, ticker);
+
+  const { fmt } = useCurrency();
 
   const [tradeType, setTradeType] = useState<TradeType>("buy");
   const [shares, setShares] = useState("");
@@ -142,7 +145,7 @@ export function TradeForm({ ticker, onClose }: Props) {
       {/* Price per share */}
       <div className="space-y-1">
         <div className="flex items-center justify-between">
-          <label className="text-xs text-gray-500">Price per Share ($)</label>
+          <label className="text-xs text-gray-500">Price per Share (USD)</label>
           {livePrice !== undefined && (
             <button
               type="button"
@@ -182,7 +185,7 @@ export function TradeForm({ ticker, onClose }: Props) {
         <div className="flex items-center justify-between text-sm bg-white/5 rounded-lg px-3 py-2">
           <span className="text-gray-500">Total</span>
           <span className="font-mono font-semibold text-gray-100">
-            ${totalValue.toFixed(2)}
+            {fmt(totalValue)}
           </span>
         </div>
       )}

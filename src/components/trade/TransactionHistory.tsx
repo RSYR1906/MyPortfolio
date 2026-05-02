@@ -44,6 +44,14 @@ export function TransactionHistory({ ticker }: Props) {
     });
   }
 
+  function formatDateShort(iso: string) {
+    return new Date(iso).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
   return (
     <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
       <div className="flex items-center justify-between">
@@ -77,7 +85,71 @@ export function TransactionHistory({ ticker }: Props) {
               </span>
             </div>
           )}
-          <div className="overflow-x-auto">
+          {/* Mobile card list */}
+          <div className="sm:hidden space-y-2">
+            {visible.map((tx) => (
+              <div
+                key={tx.id}
+                className="flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/5"
+              >
+                <div className="flex items-start gap-2 min-w-0">
+                  <span
+                    className={`shrink-0 mt-0.5 px-1.5 py-0.5 rounded text-[11px] font-semibold uppercase ${
+                      tx.type === "buy"
+                        ? "bg-emerald-500/15 text-emerald-400"
+                        : "bg-red-500/15 text-red-400"
+                    }`}
+                  >
+                    {tx.type}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-mono text-gray-200">
+                      {tx.shares % 1 === 0 ? tx.shares : tx.shares.toFixed(4)} @{" "}
+                      {fmt(tx.pricePerShare)}
+                    </p>
+                    <p className="text-[11px] text-gray-500">
+                      {formatDateShort(tx.date)}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right flex flex-col items-end gap-1">
+                  <p className="text-[13px] font-mono font-semibold text-gray-100">
+                    {fmt(tx.shares * tx.pricePerShare)}
+                  </p>
+                  {confirmDeleteId === tx.id ? (
+                    <span className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          removeTransaction(tx.id);
+                          setConfirmDeleteId(null);
+                        }}
+                        className="text-[11px] text-red-400 hover:text-red-300"
+                      >
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="text-[11px] text-gray-500 hover:text-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(tx.id)}
+                      className="text-[11px] text-gray-600 hover:text-red-400 transition-colors"
+                      aria-label="Delete transaction"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-gray-600 text-[11px] uppercase tracking-wider">

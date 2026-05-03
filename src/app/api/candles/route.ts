@@ -1,6 +1,7 @@
 // NOTE: Finnhub /stock/candle requires a paid plan.
-// This route uses the Yahoo Finance unofficial chart API instead — it is free,
-// requires no API key, and covers stocks and ETFs.
+// This route uses the Yahoo Finance unofficial chart API as the primary source
+// and falls back to Finnhub if Yahoo returns an error or empty result.
+import { finnhubFetch } from '@/lib/finnhub';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import type { Candle } from '@/types';
 import { NextRequest, NextResponse } from 'next/server';
@@ -37,6 +38,42 @@ const RESOLUTION_TO_INTERVAL: Record<string, string> = {
   'M': '1mo',
 };
 
+interface FinnhubCandleResponse {
+  o: number[];
+  h: number[];
+  l: number[];
+  c: number[];
+  v: number[];
+  t: number[];
+  s: 'ok' | 'no_data';
+}
+
+async function fetchFinnhubCandles(
+  symbol: string,
+  resolution: string,
+  from: string,
+  to: string,
+  revalidate: number,
+): Promise<Candle[]> {
+  try {
+    const data = await finnhubFetch<FinnhubCandleResponse>(
+      '/stock/candle',
+      { symbol, resolution, from, to },
+      revalidate,
+    );
+    if (data.s !== 'ok' || !data.t?.length) return [];
+    const candles: Candle[] = [];
+    for (let i = 0; i < data.t.length; i++) {
+      const o = data.o[i], h = data.h[i], l = data.l[i], c = data.c[i];
+      if (o == null || h == null || l == null || c == null) continue;
+      candles.push({ time: data.t[i], open: o, high: h, low: l, close: c, volume: data.v?.[i] ?? 0 });
+    }
+    return candles;
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(req: NextRequest) {
   const ip = getClientIp(req);
   const { allowed } = checkRateLimit(ip);
@@ -57,21 +94,24 @@ export async function GET(req: NextRequest) {
   const interval = RESOLUTION_TO_INTERVAL[resolution] ?? '1d';
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=${interval}&period1=${from}&period2=${to}&events=div,split`;
 
+  const revalidate = resolution === '5' || resolution === '60' ? 60 : 3600;
+
   try {
     const res = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
-      // Intraday (5m/60m) → cache 60 s; daily/weekly → cache 1 hr
-      next: { revalidate: resolution === '5' || resolution === '60' ? 60 : 3600 },
+      next: { revalidate },
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: `Yahoo Finance error: ${res.status}` }, { status: 502 });
+      const fallback = await fetchFinnhubCandles(symbol, resolution, from, to, revalidate);
+      return NextResponse.json(fallback);
     }
 
     const data = (await res.json()) as YahooResponse;
 
     if (data.chart.error || !data.chart.result?.length) {
-      return NextResponse.json([]);
+      const fallback = await fetchFinnhubCandles(symbol, resolution, from, to, revalidate);
+      return NextResponse.json(fallback);
     }
 
     const result = data.chart.result[0];
@@ -79,7 +119,8 @@ export async function GET(req: NextRequest) {
     const quote = result.indicators.quote[0];
 
     if (!timestamps?.length || !quote) {
-      return NextResponse.json([]);
+      const fallback = await fetchFinnhubCandles(symbol, resolution, from, to, revalidate);
+      return NextResponse.json(fallback);
     }
 
     const candles: Candle[] = [];
@@ -93,8 +134,14 @@ export async function GET(req: NextRequest) {
       candles.push({ time: timestamps[i], open, high, low, close, volume: quote.volume[i] ?? 0 });
     }
 
+    if (candles.length === 0) {
+      const fallback = await fetchFinnhubCandles(symbol, resolution, from, to, revalidate);
+      return NextResponse.json(fallback);
+    }
+
     return NextResponse.json(candles);
   } catch {
-    return NextResponse.json({ error: 'Failed to fetch candles' }, { status: 500 });
+    const fallback = await fetchFinnhubCandles(symbol, resolution, from, to, revalidate);
+    return NextResponse.json(fallback.length ? fallback : { error: 'Failed to fetch candles' }, fallback.length ? undefined : { status: 500 });
   }
 }

@@ -10,8 +10,11 @@ import { formatPct } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Timeframe } from "@/types";
 import { useState } from "react";
+import { AnalystRatings } from "./AnalystRatings";
 import { AssetProfile } from "./AssetProfile";
+import { InsiderTransactions } from "./InsiderTransactions";
 import { NewsFeed } from "./NewsFeed";
+import { PositionNotes } from "./PositionNotes";
 import { PriceChart } from "./PriceChart";
 import { TimeframeSelector } from "./TimeframeSelector";
 
@@ -181,10 +184,25 @@ export function FocusView() {
 
           {/* Profile */}
           <AssetProfile ticker={ticker} />
+
+          {/* Analyst ratings + insider transactions — stocks only */}
+          {asset.type !== "etf" && (
+            <>
+              <AnalystRatings ticker={ticker} />
+              <InsiderTransactions ticker={ticker} />
+            </>
+          )}
         </div>
 
         {/* Trade + History */}
         <div className={mobileTab !== "trade" ? "hidden md:block" : ""}>
+          {/* Notes */}
+          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 mb-6">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+              Notes
+            </h3>
+            <PositionNotes ticker={ticker} />
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">

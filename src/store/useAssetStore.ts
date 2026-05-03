@@ -11,12 +11,15 @@ interface AssetStore {
   prices: Record<string, PriceData>;
   // All transactions
   transactions: Transaction[];
+  // Per-ticker freeform notes
+  notes: Record<string, string>;
 
   /** Bulk-load portfolio data from Supabase on mount. */
   loadPortfolio: (
     assets: Asset[],
     transactions: Transaction[],
     selectedTicker: string,
+    notes?: Record<string, string>,
   ) => void;
   setSelectedTicker: (ticker: string) => void;
   updatePrice: (ticker: string, data: Partial<PriceData>) => void;
@@ -25,6 +28,7 @@ interface AssetStore {
   removeTransaction: (id: string) => void;
   addAsset: (asset: Asset) => void;
   removeAsset: (ticker: string) => void;
+  setNote: (ticker: string, note: string) => void;
 }
 
 export const useAssetStore = create<AssetStore>()((set) => ({
@@ -32,9 +36,10 @@ export const useAssetStore = create<AssetStore>()((set) => ({
   selectedTicker: ASSETS[0]?.ticker ?? '',
   prices: {},
   transactions: [],
+  notes: {},
 
-  loadPortfolio: (assets, transactions, selectedTicker) =>
-    set({ assets, transactions, selectedTicker }),
+  loadPortfolio: (assets, transactions, selectedTicker, notes = {}) =>
+    set({ assets, transactions, selectedTicker, notes }),
 
   setSelectedTicker: (ticker) => set({ selectedTicker: ticker }),
 
@@ -75,9 +80,12 @@ export const useAssetStore = create<AssetStore>()((set) => ({
       const remaining = state.assets.filter((a) => a.ticker !== ticker);
       const newPrices = { ...state.prices };
       delete newPrices[ticker];
+      const newNotes = { ...state.notes };
+      delete newNotes[ticker];
       return {
         assets: remaining,
         prices: newPrices,
+        notes: newNotes,
         // Cascade-delete all transactions for this ticker
         transactions: state.transactions.filter((t) => t.ticker !== ticker),
         selectedTicker:
@@ -86,4 +94,9 @@ export const useAssetStore = create<AssetStore>()((set) => ({
             : state.selectedTicker,
       };
     }),
+
+  setNote: (ticker, note) =>
+    set((state) => ({
+      notes: { ...state.notes, [ticker]: note },
+    })),
 }));

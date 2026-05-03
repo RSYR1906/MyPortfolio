@@ -4,6 +4,8 @@ export interface Asset {
   name: string;
   type: 'stock' | 'etf';
   accentColor: string;
+  /** True when added as a watchlist entry with no trade intent. */
+  watchlist?: boolean;
 }
 
 // ── Price ──────────────────────────────────────────────────────────────────────
@@ -73,4 +75,41 @@ export interface RealizedPnL {
   /** Cost basis of shares that were sold. */
   costBasis: number;
   realizedPnLPct: number;
+}
+
+// ── Analyst ────────────────────────────────────────────────────────────────────
+export interface AnalystRecommendation {
+  period: string;
+  strongBuy: number;
+  buy: number;
+  hold: number;
+  sell: number;
+  strongSell: number;
+}
+
+export interface PriceTarget {
+  targetHigh: number;
+  targetLow: number;
+  targetMean: number;
+  targetMedian: number;
+  lastUpdated: string;
+}
+
+// ── Earnings ───────────────────────────────────────────────────────────────────
+export interface EarningsEvent {
+  date: string;
+  epsActual: number | null;
+  epsEstimate: number | null;
+  quarter: number;
+  year: number;
+}
+
+// ── Insider Transactions ───────────────────────────────────────────────────────
+export interface InsiderTransaction {
+  name: string;
+  share: number;
+  change: number;
+  transactionDate: string;
+  transactionCode: string;
+  transactionPrice: number;
 }

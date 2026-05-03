@@ -119,6 +119,15 @@ export function AssetRow({
         </div>
       </div>
 
+      {/* Watchlist badge — shown when watching with no position */}
+      {asset.watchlist && !holding && (
+        <div className="mt-0.5 pl-4">
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30 font-medium">
+            Watching
+          </span>
+        </div>
+      )}
+
       {/* Portfolio row (shown when holding > 0) */}
       {holding && pnl && (
         <div className="flex items-center justify-between mt-0.5 pl-4">

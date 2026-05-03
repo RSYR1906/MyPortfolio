@@ -3,7 +3,6 @@
 import type { SearchResult } from "@/app/api/search/route";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { finnhubWsManager } from "@/lib/finnhubWs";
 import { createClient } from "@/lib/supabase/client";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useCurrencyStore } from "@/store/useCurrencyStore";
@@ -43,7 +42,32 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ── Recent searches (localStorage, max 5) ─────────────────────────────
+  const [recentSearches, setRecentSearches] = useState<
+    Array<{ ticker: string; name: string }>
+  >([]);
 
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("recentSearches");
+      if (stored) setRecentSearches(JSON.parse(stored));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function pushRecent(entry: { ticker: string; name: string }) {
+    setRecentSearches((prev) => {
+      const filtered = prev.filter((r) => r.ticker !== entry.ticker);
+      const updated = [entry, ...filtered].slice(0, 5);
+      try {
+        localStorage.setItem("recentSearches", JSON.stringify(updated));
+      } catch {
+        // ignore
+      }
+      return updated;
+    });
+  }
   // Close dropdown when clicking outside the form
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {
@@ -65,7 +89,8 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
 
     if (!val.trim()) {
       setSuggestions([]);
-      setSuggestionsOpen(false);
+      // Show recents when input is cleared
+      setSuggestionsOpen(recentSearches.length > 0);
       return;
     }
 
@@ -83,10 +108,15 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
   }
 
   function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (suggestionsOpen && suggestions.length > 0) {
+    const showingRecents = addInput.trim() === "" && recentSearches.length > 0;
+    const activeList = showingRecents
+      ? recentSearches.map((r) => r.ticker)
+      : suggestions.map((s) => s.ticker);
+
+    if (suggestionsOpen && activeList.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
+        setActiveIndex((i) => Math.min(i + 1, activeList.length - 1));
         return;
       }
       if (e.key === "ArrowUp") {
@@ -102,12 +132,16 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
       if (e.key === "Enter") {
         if (activeIndex >= 0) {
           e.preventDefault();
-          selectSuggestion(suggestions[activeIndex]);
+          if (showingRecents) {
+            selectRecent(recentSearches[activeIndex]);
+          } else {
+            selectSuggestion(suggestions[activeIndex]);
+          }
           return;
         }
       }
     }
-    if (e.key === "Enter") handleAdd();
+    if (e.key === "Enter") handleWatch();
   }
 
   function selectSuggestion(result: SearchResult) {
@@ -115,15 +149,24 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
     setSuggestionsOpen(false);
     setActiveIndex(-1);
     setSuggestions([]);
-    // Immediately add it
-    addTicker(result.ticker);
+    inputRef.current?.focus();
   }
 
-  async function addTicker(sym: string) {
-    if (!sym) return;
+  function selectRecent(r: { ticker: string; name: string }) {
+    setAddInput(r.ticker);
+    setSuggestionsOpen(false);
+    setActiveIndex(-1);
+    inputRef.current?.focus();
+  }
+
+  async function addTicker(
+    sym: string,
+    watchlist: boolean,
+  ): Promise<Asset | null> {
+    if (!sym) return null;
     if (assets.some((a) => a.ticker === sym)) {
       setAddError("Already tracked");
-      return;
+      return null;
     }
     setIsAdding(true);
     setAddError(null);
@@ -132,32 +175,43 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setAddError((body as { error?: string }).error ?? "Symbol not found");
-        return;
+        return null;
       }
-      const asset = (await res.json()) as Asset;
+      const fetched = (await res.json()) as Asset;
+      const asset: Asset = { ...fetched, watchlist };
       useAssetStore.getState().addAsset(asset);
-      finnhubWsManager.subscribeTicker(sym);
       fetch(`/api/quotes?tickers=${encodeURIComponent(sym)}`)
         .then((r) => r.json())
         .then((data) => useAssetStore.getState().initPrices(data))
         .catch(console.error);
       setAddInput("");
       inputRef.current?.focus();
+      return asset;
     } catch {
       setAddError("Lookup failed");
+      return null;
     } finally {
       setIsAdding(false);
     }
   }
 
-  async function handleAdd() {
+  async function handleWatch() {
     const sym = addInput.trim().toUpperCase();
-    await addTicker(sym);
+    const asset = await addTicker(sym, true);
+    if (asset) pushRecent({ ticker: asset.ticker, name: asset.name });
+  }
+
+  async function handleTrade() {
+    const sym = addInput.trim().toUpperCase();
+    const asset = await addTicker(sym, false);
+    if (asset) {
+      pushRecent({ ticker: asset.ticker, name: asset.name });
+      onTradeClick(sym);
+    }
   }
 
   function handleRemove(ticker: string) {
     useAssetStore.getState().removeAsset(ticker);
-    finnhubWsManager.unsubscribeTicker(ticker);
   }
 
   async function handleSignOut() {
@@ -232,7 +286,11 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleInputKeyDown}
                 onFocus={() => {
-                  if (suggestions.length > 0) setSuggestionsOpen(true);
+                  if (addInput.trim() === "" && recentSearches.length > 0) {
+                    setSuggestionsOpen(true);
+                  } else if (suggestions.length > 0) {
+                    setSuggestionsOpen(true);
+                  }
                 }}
                 placeholder="Add ticker, e.g. AAPL"
                 maxLength={40}
@@ -240,62 +298,113 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
                 autoComplete="off"
                 className="flex-1 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-gray-100 placeholder-gray-600 focus:outline-none focus:border-blue-500/60 disabled:opacity-50"
               />
-              <button
-                onClick={handleAdd}
-                disabled={isAdding || !addInput.trim()}
-                className="px-2 py-1 rounded bg-blue-600/80 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-xs text-white transition-colors"
-              >
-                {isAdding ? "…" : "+"}
-              </button>
+              {/* Watch / Trade action buttons — shown when there's input */}
+              {addInput.trim() && (
+                <>
+                  <button
+                    onClick={handleWatch}
+                    disabled={isAdding}
+                    title="Add to watchlist"
+                    className="px-1.5 py-1 rounded border border-blue-500/50 hover:bg-blue-600/20 disabled:opacity-40 disabled:cursor-not-allowed text-[11px] text-blue-400 transition-colors whitespace-nowrap"
+                  >
+                    Watch
+                  </button>
+                  <button
+                    onClick={handleTrade}
+                    disabled={isAdding}
+                    title="Add and trade"
+                    className="px-1.5 py-1 rounded bg-blue-600/80 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-[11px] text-white transition-colors whitespace-nowrap"
+                  >
+                    {isAdding ? "…" : "Trade"}
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* Suggestions dropdown */}
-            {suggestionsOpen && suggestions.length > 0 && (
-              <ul
-                id="ticker-suggestions"
-                role="listbox"
-                aria-label="Ticker suggestions"
-                className="absolute left-0 right-0 top-full mt-1 z-40 bg-[#161b22] border border-white/10 rounded-lg shadow-xl overflow-hidden"
-              >
-                {suggestions.map((s, i) => (
-                  <li
-                    key={s.ticker}
-                    id={`suggestion-${i}`}
-                    role="option"
-                    aria-selected={i === activeIndex}
-                    onPointerDown={(e) => {
-                      // prevent input blur before click fires
-                      e.preventDefault();
-                      selectSuggestion(s);
-                    }}
-                    className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer transition-colors ${
-                      i === activeIndex
-                        ? "bg-blue-600/20 text-gray-100"
-                        : "hover:bg-white/5 text-gray-300"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs font-semibold text-gray-100 shrink-0">
-                        {s.ticker}
-                      </span>
-                      <span className="text-[11px] text-gray-500 truncate">
-                        {s.name}
-                      </span>
-                    </span>
-                    <span className="flex items-center gap-1.5 shrink-0">
-                      {s.type === "etf" && (
-                        <span className="text-[10px] px-1 py-0.5 rounded bg-white/10 text-gray-400">
-                          ETF
+            {/* Suggestions / Recents dropdown */}
+            {suggestionsOpen &&
+              (suggestions.length > 0 ||
+                (addInput.trim() === "" && recentSearches.length > 0)) && (
+                <ul
+                  id="ticker-suggestions"
+                  role="listbox"
+                  aria-label="Ticker suggestions"
+                  className="absolute left-0 right-0 top-full mt-1 z-40 bg-[#161b22] border border-white/10 rounded-lg shadow-xl overflow-hidden"
+                >
+                  {addInput.trim() === "" && recentSearches.length > 0 ? (
+                    <>
+                      <li className="px-3 pt-2 pb-1 text-[10px] text-gray-600 uppercase tracking-wider">
+                        Recent
+                      </li>
+                      {recentSearches.map((r, i) => (
+                        <li
+                          key={r.ticker}
+                          id={`suggestion-${i}`}
+                          role="option"
+                          aria-selected={i === activeIndex}
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            selectRecent(r);
+                          }}
+                          className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer transition-colors ${
+                            i === activeIndex
+                              ? "bg-blue-600/20 text-gray-100"
+                              : "hover:bg-white/5 text-gray-300"
+                          }`}
+                        >
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className="text-gray-600 text-[10px]">↻</span>
+                            <span className="text-xs font-semibold text-gray-100 shrink-0">
+                              {r.ticker}
+                            </span>
+                            <span className="text-[11px] text-gray-500 truncate">
+                              {r.name}
+                            </span>
+                          </span>
+                        </li>
+                      ))}
+                    </>
+                  ) : (
+                    suggestions.map((s, i) => (
+                      <li
+                        key={s.ticker}
+                        id={`suggestion-${i}`}
+                        role="option"
+                        aria-selected={i === activeIndex}
+                        onPointerDown={(e) => {
+                          // prevent input blur before click fires
+                          e.preventDefault();
+                          selectSuggestion(s);
+                        }}
+                        className={`flex items-center justify-between gap-2 px-3 py-2 cursor-pointer transition-colors ${
+                          i === activeIndex
+                            ? "bg-blue-600/20 text-gray-100"
+                            : "hover:bg-white/5 text-gray-300"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs font-semibold text-gray-100 shrink-0">
+                            {s.ticker}
+                          </span>
+                          <span className="text-[11px] text-gray-500 truncate">
+                            {s.name}
+                          </span>
                         </span>
-                      )}
-                      <span className="text-[10px] text-gray-600 uppercase">
-                        {s.exchange}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          {s.type === "etf" && (
+                            <span className="text-[10px] px-1 py-0.5 rounded bg-white/10 text-gray-400">
+                              ETF
+                            </span>
+                          )}
+                          <span className="text-[10px] text-gray-600 uppercase">
+                            {s.exchange}
+                          </span>
+                        </span>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
           </div>
           {addError && (
             <p className="text-[10px] text-red-400 mt-1">{addError}</p>

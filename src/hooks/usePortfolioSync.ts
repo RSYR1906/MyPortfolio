@@ -1,7 +1,6 @@
 'use client';
 
 import { ASSETS } from '@/lib/constants';
-import { finnhubWsManager } from '@/lib/finnhubWs';
 import { createClient } from '@/lib/supabase/client';
 import { useAssetStore } from '@/store/useAssetStore';
 import type { Asset, Transaction } from '@/types';
@@ -29,7 +28,7 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
       const [portfolioRes, txRes] = await Promise.all([
         supabase
           .from('portfolios')
-          .select('assets, selected_ticker')
+          .select('assets, selected_ticker, notes')
           .eq('user_id', userId)
           .single(),
         supabase
@@ -44,6 +43,8 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
         portfolioRes.data?.assets ?? ASSETS;
       const selectedTicker: string =
         portfolioRes.data?.selected_ticker ?? assets[0]?.ticker ?? '';
+      const notes: Record<string, string> =
+        (portfolioRes.data?.notes as Record<string, string> | null) ?? {};
 
       const transactions: Transaction[] = (txRes.data ?? []).map((row) => ({
         id: row.id as string,
@@ -54,11 +55,7 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
         date: row.date as string,
       }));
 
-      useAssetStore.getState().loadPortfolio(assets, transactions, selectedTicker);
-
-      // Subscribe any tickers to the WS manager (works whether WS is
-      // already open or not — subscribeTicker updates the internal list).
-      assets.forEach((a) => finnhubWsManager.subscribeTicker(a.ticker));
+      useAssetStore.getState().loadPortfolio(assets, transactions, selectedTicker, notes);
 
       // Fetch REST quotes for all loaded assets
       const tickers = assets.map((a) => a.ticker).join(',');
@@ -124,10 +121,11 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
         }
       }
 
-      // Asset list or selected ticker changed → upsert portfolio row
+      // Asset list, selected ticker, or notes changed → upsert portfolio row
       if (
         state.assets !== prevState.assets ||
-        state.selectedTicker !== prevState.selectedTicker
+        state.selectedTicker !== prevState.selectedTicker ||
+        state.notes !== prevState.notes
       ) {
         supabase
           .from('portfolios')
@@ -135,6 +133,7 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
             user_id: userId,
             assets: state.assets,
             selected_ticker: state.selectedTicker,
+            notes: state.notes,
             updated_at: new Date().toISOString(),
           })
           .then(({ error }) => {

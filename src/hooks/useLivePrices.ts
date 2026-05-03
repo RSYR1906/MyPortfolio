@@ -1,48 +1,59 @@
 'use client';
 
-import { finnhubWsManager } from '@/lib/finnhubWs';
 import { useAssetStore } from '@/store/useAssetStore';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
- * Mounts the Finnhub WebSocket singleton and pipes live trade prices
- * into the Zustand store. Mount once at the root dashboard level.
+ * Streams live trade prices from the server-side SSE proxy (/api/prices).
+ * The Finnhub WS key stays on the server — the browser only sees an EventSource.
  *
- * The WebSocket token is fetched from /api/ws-token (server-side env var)
- * so it is NOT baked into the JS bundle.  Falls back to the legacy
- * NEXT_PUBLIC_FINNHUB_WS_KEY if the server endpoint is unavailable.
- *
- * Waits for the store to rehydrate so that the user's persisted asset
- * watch-list (not just the compile-time defaults) is used for subscriptions.
+ * Re-opens the stream automatically whenever the tracked asset list changes.
+ * Mount once at the root dashboard level.
  */
 export function useLivePrices() {
+  const esRef = useRef<EventSource | null>(null);
+
   useEffect(() => {
-    const callback = (ticker: string, price: number) => {
-      useAssetStore.getState().updatePrice(ticker, { price });
-    };
+    function openStream(tickers: string[]) {
+      esRef.current?.close();
+      esRef.current = null;
+      if (tickers.length === 0) return;
 
-    finnhubWsManager.subscribe(callback);
+      const url = `/api/prices?tickers=${encodeURIComponent(tickers.join(','))}`;
+      const es = new EventSource(url);
 
-    // Fetch token from server endpoint (key stays out of the JS bundle),
-    // then rehydrate the store and open the WebSocket.
-    fetch('/api/ws-token')
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then(({ token }: { token: string }) => token)
-      .catch(() => {
-        // Fallback: legacy public key (less secure but keeps dev working)
-        return process.env.NEXT_PUBLIC_FINNHUB_WS_KEY ?? null;
-      })
-      .then((token) => {
-        if (!token || token === 'your_finnhub_api_key_here') return;
-        // page.tsx calls rehydrate() synchronously on mount (localStorage is sync).
-        // By the time this async token fetch resolves, the store is already populated.
-        const tickers = useAssetStore.getState().assets.map((a) => a.ticker);
-        finnhubWsManager.connect(token, tickers);
-      })
-      .catch(console.error);
+      es.onmessage = (event) => {
+        try {
+          const { ticker, price } = JSON.parse(event.data as string) as {
+            ticker: string;
+            price: number;
+          };
+          useAssetStore.getState().updatePrice(ticker, { price });
+        } catch {
+          // ignore malformed messages
+        }
+      };
+
+      // EventSource auto-reconnects on transient errors; no manual retry needed.
+      esRef.current = es;
+    }
+
+    // Initial open with the current asset list
+    openStream(useAssetStore.getState().assets.map((a) => a.ticker));
+
+    // Re-open whenever the asset list changes (ticker added / removed)
+    const unsubscribe = useAssetStore.subscribe((state, prevState) => {
+      const prev = prevState.assets.map((a) => a.ticker).sort().join(',');
+      const next = state.assets.map((a) => a.ticker).sort().join(',');
+      if (prev !== next) {
+        openStream(state.assets.map((a) => a.ticker));
+      }
+    });
 
     return () => {
-      finnhubWsManager.unsubscribe(callback);
+      unsubscribe();
+      esRef.current?.close();
+      esRef.current = null;
     };
-  }, []); // empty deps: connect once on mount
+  }, []); // mount once
 }

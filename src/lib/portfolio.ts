@@ -67,27 +67,6 @@ export function formatPct(value: number): string {
 }
 
 /**
- * Compute total cash balance from all transactions.
- * - Deposits (ticker '$CASH') add to cash.
- * - Withdrawals (ticker '$CASH') subtract from cash.
- * - Sell transactions add their proceeds to cash.
- * - Buy transactions deduct their cost from cash.
- */
-export function computeCashBalance(transactions: Transaction[]): number {
-  let cash = 0;
-  for (const tx of transactions) {
-    if (tx.ticker === '$CASH') {
-      if (tx.type === 'deposit') cash += tx.pricePerShare;
-      else if (tx.type === 'withdrawal') cash -= tx.pricePerShare;
-    } else {
-      if (tx.type === 'sell') cash += tx.shares * tx.pricePerShare;
-      else if (tx.type === 'buy') cash -= tx.shares * tx.pricePerShare;
-    }
-  }
-  return cash;
-}
-
-/**
  * Compute per-ticker realized P&L by replaying transactions in order.
  * Each sell uses the proportional (average-cost) cost basis at the time of sale.
  */

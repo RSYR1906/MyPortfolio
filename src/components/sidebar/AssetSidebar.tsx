@@ -1,16 +1,14 @@
 "use client";
 
 import type { SearchResult } from "@/app/api/search/route";
-import { CashModal } from "@/components/trade/CashModal";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { computeCashBalance } from "@/lib/portfolio";
 import { createClient } from "@/lib/supabase/client";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useCurrencyStore } from "@/store/useCurrencyStore";
 import type { Asset } from "@/types";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AssetRow } from "./AssetRow";
 import { PortfolioModal } from "./PortfolioModal";
 
@@ -30,14 +28,7 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
   const { currency, fmt, fmtPnL } = useCurrency();
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
 
-  const allTransactions = useAssetStore((s) => s.transactions);
-  const cashBalance = useMemo(
-    () => computeCashBalance(allTransactions),
-    [allTransactions],
-  );
-
   const [portfolioOpen, setPortfolioOpen] = useState(false);
-  const [cashOpen, setCashOpen] = useState(false);
 
   // ── Add-ticker form state ────────────────────────────────────────────────
   const [addInput, setAddInput] = useState("");
@@ -447,30 +438,6 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
           )}
         </div>
 
-        {/* Cash balance card */}
-        <div className="border-t border-white/10 px-4 py-2.5 flex items-center justify-between">
-          <div>
-            <p className="text-[11px] text-gray-500 uppercase tracking-wider">
-              Cash
-            </p>
-            <p
-              className={`text-sm font-mono mt-0.5 ${
-                cashBalance < 0 ? "text-red-400" : "text-gray-100"
-              }`}
-            >
-              {fmt(cashBalance)}
-            </p>
-          </div>
-          <button
-            onClick={() => setCashOpen(true)}
-            title="Deposit / withdraw cash"
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-gray-200 text-base leading-none transition-colors"
-            aria-label="Manage cash"
-          >
-            +
-          </button>
-        </div>
-
         {/* Portfolio total — clickable to open modal */}
         {totalCost > 0 && (
           <button
@@ -508,8 +475,6 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
       {portfolioOpen && (
         <PortfolioModal onClose={() => setPortfolioOpen(false)} />
       )}
-
-      {cashOpen && <CashModal onClose={() => setCashOpen(false)} />}
     </>
   );
 }

@@ -49,7 +49,7 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
       const transactions: Transaction[] = (txRes.data ?? []).map((row) => ({
         id: row.id as string,
         ticker: row.ticker as string,
-        type: row.type as 'buy' | 'sell' | 'deposit' | 'withdrawal',
+        type: row.type as 'buy' | 'sell',
         shares: row.shares as number,
         pricePerShare: row.price_per_share as number,
         date: row.date as string,

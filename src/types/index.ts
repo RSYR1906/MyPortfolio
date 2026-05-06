@@ -46,7 +46,7 @@ export interface NewsItem {
 export interface Transaction {
   id: string;
   ticker: string;
-  type: 'buy' | 'sell';
+  type: 'buy' | 'sell' | 'deposit' | 'withdrawal';
   shares: number;
   pricePerShare: number;
   date: string; // ISO string

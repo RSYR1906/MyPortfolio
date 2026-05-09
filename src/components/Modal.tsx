@@ -7,7 +7,8 @@ interface Props {
   onClose: () => void;
   children: React.ReactNode;
   /** Used for aria-labelledby — should match an id on the modal's heading. */
-  labelId?: string;
+  labelId?: string; /** Render as a bottom sheet (slides up from bottom on mobile). */
+  sheet?: boolean;
 }
 
 const FOCUSABLE =
@@ -18,7 +19,7 @@ const FOCUSABLE =
  * is never clipped by a parent stacking context (e.g. the sidebar z-index).
  * Traps focus within the dialog and restores it on close.
  */
-export function Modal({ onClose, children, labelId }: Props) {
+export function Modal({ onClose, children, labelId, sheet }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   // Remember which element had focus before the modal opened
@@ -71,7 +72,11 @@ export function Modal({ onClose, children, labelId }: Props) {
   return createPortal(
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      className={`fixed inset-0 z-50 flex bg-black/70 backdrop-blur-sm ${
+        sheet
+          ? "items-end justify-center md:items-center md:p-4"
+          : "items-center justify-center p-4"
+      }`}
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}

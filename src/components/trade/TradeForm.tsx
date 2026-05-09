@@ -1,6 +1,7 @@
 "use client";
 
 import { useCurrency } from "@/hooks/useCurrency";
+import { haptic } from "@/lib/haptics";
 import { netSharesFor } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Transaction } from "@/types";
@@ -68,6 +69,7 @@ export function TradeForm({ ticker, onClose }: Props) {
     };
 
     addTransaction(tx);
+    haptic([30, 30, 30]);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);

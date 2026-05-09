@@ -412,7 +412,7 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
         </div>
 
         {/* Asset list */}
-        <div className="flex-1 overflow-y-auto divide-y divide-white/5">
+        <div className="relative flex-1 overflow-y-auto divide-y divide-white/5">
           {assets.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
               <p className="text-sm text-gray-500">No assets tracked yet.</p>
@@ -435,6 +435,10 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
                 onRemove={handleRemove}
               />
             ))
+          )}
+          {/* Scroll fade — indicates more content below */}
+          {assets.length > 0 && (
+            <div className="sticky bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0d1117] to-transparent pointer-events-none" />
           )}
         </div>
 

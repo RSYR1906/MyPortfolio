@@ -1,3 +1,4 @@
+import { haptic } from "@/lib/haptics";
 import { useEffect, useRef, useState } from "react";
 
 const THRESHOLD = 80; // px to pull before refresh triggers
@@ -29,7 +30,12 @@ export function usePullToRefresh(containerRef: React.RefObject<HTMLElement | nul
       }
       // Prevent the browser's native overscroll/bounce while we handle it
       e.preventDefault();
-      setPullDistance(Math.min(delta, MAX_PULL));
+      const next = Math.min(delta, MAX_PULL);
+      // Single haptic pulse the moment the threshold is crossed
+      setPullDistance((prev) => {
+        if (prev < THRESHOLD && next >= THRESHOLD) haptic(12);
+        return next;
+      });
     }
 
     function onTouchEnd() {

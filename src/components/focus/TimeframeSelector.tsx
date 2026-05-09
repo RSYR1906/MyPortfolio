@@ -16,7 +16,7 @@ export function TimeframeSelector({ value, onChange }: Props) {
         <button
           key={tf}
           onClick={() => onChange(tf)}
-          className={`shrink-0 px-2 sm:px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+          className={`shrink-0 min-h-[44px] sm:min-h-0 px-2 sm:px-3 py-2 sm:py-1 text-xs font-medium rounded-md transition-colors ${
             value === tf
               ? "bg-blue-500 text-white shadow-sm"
               : "text-gray-400 hover:text-gray-200"

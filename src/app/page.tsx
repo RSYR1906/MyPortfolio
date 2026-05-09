@@ -7,6 +7,7 @@ import { TradeModal } from "@/components/trade/TradeModal";
 import { useLivePrices } from "@/hooks/useLivePrices";
 import { usePortfolioSync } from "@/hooks/usePortfolioSync";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useSwipe } from "@/hooks/useSwipe";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useRef, useState } from "react";
 
@@ -15,7 +16,13 @@ export default function Home() {
   const [tradeModalTicker, setTradeModalTicker] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const { pullDistance, refreshing, threshold } = usePullToRefresh(mainRef);
+
+  // Swipe right anywhere on main content → open sidebar (mobile only)
+  useSwipe(mainRef, { onSwipeRight: () => setSidebarOpen(true) });
+  // Swipe left on the sidebar panel → close it (mobile only)
+  useSwipe(sidebarRef, { onSwipeLeft: () => setSidebarOpen(false) });
 
   // Resolve the logged-in user's ID (middleware already ensures they're authed)
   useEffect(() => {
@@ -31,11 +38,30 @@ export default function Home() {
   // Boot live WebSocket price feed
   useLivePrices();
 
-  // Loading screen — shown until Supabase data is ready
+  // Skeleton loading screen — shown until Supabase data is ready
   if (!ready) {
     return (
-      <div className="flex h-full items-center justify-center bg-[#0d1117]">
-        <div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+      <div className="flex h-full overflow-hidden bg-[#0d1117]">
+        {/* Sidebar skeleton (desktop only) */}
+        <div className="hidden md:flex w-64 shrink-0 flex-col border-r border-white/10 p-4 gap-4">
+          <div className="h-7 w-3/4 rounded-md bg-white/5 animate-pulse" />
+          <div className="h-8 rounded-md bg-white/5 animate-pulse" />
+          {Array.from({ length: 7 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-white/5 animate-pulse shrink-0" />
+              <div className="flex-1 flex flex-col gap-1.5">
+                <div className="h-3 rounded bg-white/5 animate-pulse" />
+                <div className="h-2.5 rounded bg-white/5 animate-pulse w-2/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Main skeleton */}
+        <div className="flex-1 flex flex-col p-4 sm:p-6 gap-4">
+          <div className="h-16 rounded-xl bg-white/5 animate-pulse" />
+          <div className="h-56 sm:h-64 rounded-xl bg-white/5 animate-pulse" />
+          <div className="h-32 rounded-xl bg-white/5 animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -69,6 +95,7 @@ export default function Home() {
 
       {/* Sidebar — always mounted; slides in on mobile, always visible on md+ */}
       <div
+        ref={sidebarRef}
         className={`fixed inset-y-0 left-0 z-30 flex shrink-0 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         } md:relative md:inset-y-auto md:left-auto md:z-auto md:translate-x-0 md:transition-none`}
@@ -92,14 +119,22 @@ export default function Home() {
           }}
         >
           <div
-            className={`w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full ${
-              refreshing || pullDistance >= threshold ? "animate-spin" : ""
+            className={`w-6 h-6 border-2 border-t-transparent rounded-full ${
+              refreshing
+                ? "border-blue-400 animate-spin"
+                : pullDistance >= threshold
+                  ? "border-blue-400"
+                  : "border-gray-500"
             }`}
-            style={{
-              opacity: pullDistance > 0 || refreshing ? 1 : 0,
-              transform: `rotate(${(pullDistance / threshold) * 180}deg)`,
-              transition: refreshing ? "none" : "transform 0.1s linear",
-            }}
+            style={
+              refreshing
+                ? { opacity: 1 }
+                : {
+                    opacity: pullDistance > 0 ? pullDistance / threshold : 0,
+                    transform: `rotate(${(pullDistance / threshold) * 180}deg)`,
+                    transition: "transform 0.1s linear",
+                  }
+            }
           />
         </div>
 

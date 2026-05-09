@@ -6,10 +6,11 @@ import { useCandles } from "@/hooks/useCandles";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useNews } from "@/hooks/useNews";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { useSwipe } from "@/hooks/useSwipe";
 import { formatPct } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Timeframe } from "@/types";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AnalystRatings } from "./AnalystRatings";
 import { AssetProfile } from "./AssetProfile";
 import { InsiderTransactions } from "./InsiderTransactions";
@@ -27,6 +28,20 @@ export function FocusView() {
   const [mobileTab, setMobileTab] = useState<"overview" | "trade" | "news">(
     "overview",
   );
+  const TABS = ["overview", "trade", "news"] as const;
+  const bodyRef = useRef<HTMLDivElement>(null);
+  useSwipe(bodyRef, {
+    onSwipeLeft: () =>
+      setMobileTab((t) => {
+        const i = TABS.indexOf(t);
+        return i < TABS.length - 1 ? TABS[i + 1] : t;
+      }),
+    onSwipeRight: () =>
+      setMobileTab((t) => {
+        const i = TABS.indexOf(t);
+        return i > 0 ? TABS[i - 1] : t;
+      }),
+  });
 
   const { holdings, pnlMap } = usePortfolio();
   const holding = holdings[ticker];
@@ -60,7 +75,7 @@ export function FocusView() {
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto">
+    <div ref={bodyRef} className="flex-1 flex flex-col overflow-y-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#0d1117]/95 backdrop-blur-sm border-b border-white/10">
         <div className="px-4 sm:px-6 py-3 sm:py-4">

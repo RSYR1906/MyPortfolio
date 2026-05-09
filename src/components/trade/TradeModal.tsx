@@ -13,8 +13,12 @@ export function TradeModal({ ticker, onClose }: Props) {
   const asset = useAssetStore((s) => s.assets.find((a) => a.ticker === ticker));
 
   return (
-    <Modal onClose={onClose} labelId="trade-modal-title">
-      <div className="w-full max-w-sm bg-[#161b22] border border-white/10 rounded-2xl shadow-2xl p-5 space-y-4 anim-modal-in">
+    <Modal onClose={onClose} labelId="trade-modal-title" sheet>
+      <div className="w-full md:max-w-sm bg-[#161b22] border border-white/10 rounded-t-2xl md:rounded-2xl shadow-2xl p-5 space-y-4 anim-sheet-in pb-safe">
+        {/* Drag pill — visual cue for the bottom sheet */}
+        <div className="md:hidden flex justify-center -mt-1 mb-1">
+          <div className="w-10 h-1 rounded-full bg-white/20" />
+        </div>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

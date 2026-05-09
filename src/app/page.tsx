@@ -139,13 +139,13 @@ export default function Home() {
         </div>
 
         {/* Mobile top bar with hamburger */}
-        <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#0d1117] shrink-0">
+        <div className="md:hidden flex items-center gap-3 px-4 pt-safe border-b border-white/10 bg-[#0d1117] shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
             aria-label="Open sidebar"
             aria-expanded={sidebarOpen}
             aria-controls="asset-sidebar"
-            className="text-gray-400 hover:text-gray-200 transition-colors text-xl leading-none"
+            className="flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 text-gray-400 hover:text-gray-200 transition-colors text-xl"
           >
             ☰
           </button>

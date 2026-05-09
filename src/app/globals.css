@@ -103,6 +103,9 @@ html {
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0.75rem);
+}
 
 /* Bottom-sheet slide-up animation (TradeModal on mobile) */
 @keyframes sheet-slide-up {

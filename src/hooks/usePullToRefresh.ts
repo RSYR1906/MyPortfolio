@@ -15,8 +15,12 @@ export function usePullToRefresh(containerRef: React.RefObject<HTMLElement | nul
     if (!el) return;
 
     function onTouchStart(e: TouchEvent) {
-      // Only start tracking if we're at the very top of the scroll container
-      if (el!.scrollTop > 0) return;
+      // Walk from the touch target up to our container checking any scrollable child
+      let node = e.target as HTMLElement | null;
+      while (node && node !== el) {
+        if (node.scrollHeight > node.clientHeight && node.scrollTop > 0) return;
+        node = node.parentElement;
+      }
       startY.current = e.touches[0].clientY;
       pulling.current = true;
     }

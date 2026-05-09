@@ -104,36 +104,9 @@ export default function Home() {
       {/* Main content area */}
       <div
         ref={mainRef}
-        className="flex-1 flex flex-col min-w-0 overflow-y-auto"
+        className="flex-1 flex flex-col min-w-0 overflow-hidden"
       >
-        {/* Pull-to-refresh indicator (mobile only) */}
-        <div
-          className="md:hidden flex items-center justify-center overflow-hidden transition-all duration-150"
-          style={{
-            height: pullDistance > 0 ? pullDistance : refreshing ? 48 : 0,
-          }}
-        >
-          <div
-            className={`w-6 h-6 border-2 border-t-transparent rounded-full ${
-              refreshing
-                ? "border-blue-400 animate-spin"
-                : pullDistance >= threshold
-                  ? "border-blue-400"
-                  : "border-gray-500"
-            }`}
-            style={
-              refreshing
-                ? { opacity: 1 }
-                : {
-                    opacity: pullDistance > 0 ? pullDistance / threshold : 0,
-                    transform: `rotate(${(pullDistance / threshold) * 180}deg)`,
-                    transition: "transform 0.1s linear",
-                  }
-            }
-          />
-        </div>
-
-        {/* Mobile top bar with hamburger */}
+        {/* Mobile top bar with hamburger — always on top so indicator appears below it */}
         <div className="md:hidden flex items-center gap-3 px-4 pt-safe border-b border-white/10 bg-[#0d1117] shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -145,6 +118,33 @@ export default function Home() {
             ☰
           </button>
           <span className="text-sm font-semibold text-gray-100">Portfolio</span>
+        </div>
+
+        {/* Pull-to-refresh indicator (mobile only) */}
+        <div
+          className="md:hidden shrink-0 flex items-center justify-center overflow-hidden transition-[height] duration-150"
+          style={{
+            height: pullDistance > 0 ? pullDistance : refreshing ? 56 : 0,
+          }}
+        >
+          <div
+            className={`w-8 h-8 border-[3px] border-t-transparent rounded-full ${
+              refreshing
+                ? "border-blue-400 animate-spin"
+                : pullDistance >= threshold
+                  ? "border-blue-400"
+                  : "border-gray-600"
+            }`}
+            style={
+              refreshing
+                ? { opacity: 1 }
+                : {
+                    opacity: Math.min(pullDistance / (threshold * 0.4), 1),
+                    transform: `rotate(${(pullDistance / threshold) * 270}deg)`,
+                    transition: "transform 0.05s linear",
+                  }
+            }
+          />
         </div>
 
         <ErrorBoundary>

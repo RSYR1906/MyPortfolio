@@ -38,30 +38,25 @@ export default function Home() {
   // Boot live WebSocket price feed
   useLivePrices();
 
-  // Skeleton loading screen — shown until Supabase data is ready
+  // Loading screen — shown until Supabase data is ready
   if (!ready) {
     return (
-      <div className="flex h-full overflow-hidden bg-[#0d1117]">
-        {/* Sidebar skeleton (desktop only) */}
-        <div className="hidden md:flex w-64 shrink-0 flex-col border-r border-white/10 p-4 gap-4">
-          <div className="h-7 w-3/4 rounded-md bg-white/5 animate-pulse" />
-          <div className="h-8 rounded-md bg-white/5 animate-pulse" />
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/5 animate-pulse shrink-0" />
-              <div className="flex-1 flex flex-col gap-1.5">
-                <div className="h-3 rounded bg-white/5 animate-pulse" />
-                <div className="h-2.5 rounded bg-white/5 animate-pulse w-2/3" />
-              </div>
-            </div>
-          ))}
+      <div className="flex h-full flex-col items-center justify-center gap-6 bg-[#0d1117]">
+        {/* Concentric spinning rings */}
+        <div className="relative flex items-center justify-center w-20 h-20">
+          {/* Outer ring — slow clockwise */}
+          <span className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-500/40 animate-spin" />
+          {/* Middle ring — faster counter-clockwise */}
+          <span
+            className="absolute inset-3 rounded-full border-2 border-transparent border-b-blue-400 border-l-blue-400/40"
+            style={{ animation: "spin 0.9s linear infinite reverse" }}
+          />
+          {/* Inner pulsing dot */}
+          <span className="w-3 h-3 rounded-full bg-blue-400 animate-pulse" />
         </div>
-        {/* Main skeleton */}
-        <div className="flex-1 flex flex-col p-4 sm:p-6 gap-4">
-          <div className="h-16 rounded-xl bg-white/5 animate-pulse" />
-          <div className="h-56 sm:h-64 rounded-xl bg-white/5 animate-pulse" />
-          <div className="h-32 rounded-xl bg-white/5 animate-pulse" />
-        </div>
+        <p className="text-sm text-gray-500 tracking-wide">
+          Loading portfolio…
+        </p>
       </div>
     );
   }

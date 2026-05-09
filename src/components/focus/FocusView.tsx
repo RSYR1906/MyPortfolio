@@ -155,7 +155,7 @@ export function FocusView() {
             <button
               key={tab}
               onClick={() => setMobileTab(tab)}
-              className={`flex-1 py-2.5 text-xs font-semibold capitalize transition-colors border-b-2 ${
+              className={`flex-1 py-3.5 sm:py-2.5 text-xs font-semibold capitalize transition-colors border-b-2 ${
                 mobileTab === tab
                   ? "text-blue-400 border-blue-400"
                   : "text-gray-500 hover:text-gray-300 border-transparent"

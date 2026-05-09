@@ -148,13 +148,13 @@ export function AssetRow({
       )}
 
       {/* Quick actions — always visible on mobile, hover-reveal on desktop */}
-      <div className="mt-1 ml-4 flex items-center gap-3 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+      <div className="mt-1 ml-4 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         <button
           onClick={(e) => {
             e.stopPropagation();
             onTradeClick(ticker);
           }}
-          className="text-[11px] text-blue-400 hover:text-blue-300"
+          className="flex items-center justify-center min-h-[36px] px-3 text-xs text-blue-400 hover:text-blue-300 rounded-md hover:bg-blue-400/10 transition-colors"
         >
           + Trade
         </button>
@@ -163,7 +163,7 @@ export function AssetRow({
             e.stopPropagation();
             onRemove(ticker);
           }}
-          className="text-[11px] text-red-400/60 hover:text-red-400"
+          className="flex items-center justify-center min-h-[36px] px-3 text-xs text-red-400/60 hover:text-red-400 rounded-md hover:bg-red-400/10 transition-colors"
         >
           × Remove
         </button>

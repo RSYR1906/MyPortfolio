@@ -90,7 +90,7 @@ export function TradeForm({ ticker, onClose }: Props) {
               setTradeType(type);
               setError(null);
             }}
-            className={`flex-1 py-2 text-sm font-semibold capitalize transition-colors ${
+            className={`flex-1 py-3 sm:py-2 text-sm font-semibold capitalize transition-colors ${
               tradeType === type
                 ? type === "buy"
                   ? "bg-emerald-500/20 text-emerald-400 border-b-2 border-emerald-500"
@@ -114,7 +114,7 @@ export function TradeForm({ ticker, onClose }: Props) {
             Max:{" "}
             <button
               type="button"
-              className="text-blue-400 hover:underline"
+              className="inline-flex items-center min-h-[36px] px-1 text-blue-400 hover:underline"
               onClick={() =>
                 setShares(
                   heldShares % 1 === 0
@@ -151,7 +151,7 @@ export function TradeForm({ ticker, onClose }: Props) {
           {livePrice !== undefined && (
             <button
               type="button"
-              className="text-[11px] text-blue-400 hover:underline"
+              className="flex items-center min-h-[36px] px-2 text-[11px] text-blue-400 hover:underline"
               onClick={() => setPricePerShare(livePrice.toFixed(2))}
             >
               Use live: ${livePrice.toFixed(2)}
@@ -198,7 +198,7 @@ export function TradeForm({ ticker, onClose }: Props) {
       {/* Submit */}
       <button
         type="submit"
-        className={`w-full py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+        className={`w-full py-3.5 sm:py-2.5 rounded-lg text-sm font-semibold transition-colors ${
           submitted
             ? "bg-emerald-600 text-white"
             : tradeType === "buy"

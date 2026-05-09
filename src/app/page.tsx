@@ -80,11 +80,16 @@ export default function Home() {
       </div>
 
       {/* Main content area */}
-      <div ref={mainRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div
+        ref={mainRef}
+        className="flex-1 flex flex-col min-w-0 overflow-y-auto"
+      >
         {/* Pull-to-refresh indicator (mobile only) */}
         <div
           className="md:hidden flex items-center justify-center overflow-hidden transition-all duration-150"
-          style={{ height: pullDistance > 0 ? pullDistance : refreshing ? 48 : 0 }}
+          style={{
+            height: pullDistance > 0 ? pullDistance : refreshing ? 48 : 0,
+          }}
         >
           <div
             className={`w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full ${
@@ -98,7 +103,7 @@ export default function Home() {
           />
         </div>
 
-        {/* Mobile top bar with hamburger */
+        {/* Mobile top bar with hamburger */}
         <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#0d1117] shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}

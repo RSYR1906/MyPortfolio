@@ -6,13 +6,16 @@ import { AssetSidebar } from "@/components/sidebar/AssetSidebar";
 import { TradeModal } from "@/components/trade/TradeModal";
 import { useLivePrices } from "@/hooks/useLivePrices";
 import { usePortfolioSync } from "@/hooks/usePortfolioSync";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
   const [userId, setUserId] = useState<string | null>(null);
   const [tradeModalTicker, setTradeModalTicker] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const { pullDistance, refreshing, threshold } = usePullToRefresh(mainRef);
 
   // Resolve the logged-in user's ID (middleware already ensures they're authed)
   useEffect(() => {
@@ -77,8 +80,25 @@ export default function Home() {
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Mobile top bar with hamburger */}
+      <div ref={mainRef} className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        {/* Pull-to-refresh indicator (mobile only) */}
+        <div
+          className="md:hidden flex items-center justify-center overflow-hidden transition-all duration-150"
+          style={{ height: pullDistance > 0 ? pullDistance : refreshing ? 48 : 0 }}
+        >
+          <div
+            className={`w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full ${
+              refreshing || pullDistance >= threshold ? "animate-spin" : ""
+            }`}
+            style={{
+              opacity: pullDistance > 0 || refreshing ? 1 : 0,
+              transform: `rotate(${(pullDistance / threshold) * 180}deg)`,
+              transition: refreshing ? "none" : "transform 0.1s linear",
+            }}
+          />
+        </div>
+
+        {/* Mobile top bar with hamburger */
         <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-white/10 bg-[#0d1117] shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}

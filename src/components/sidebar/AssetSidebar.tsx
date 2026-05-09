@@ -228,7 +228,7 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
         className="w-full max-w-xs md:w-64 shrink-0 flex flex-col h-full border-r border-white/10 bg-[#0d1117]"
       >
         {/* Header */}
-        <div className="px-4 py-4 border-b border-white/10 flex items-start justify-between">
+        <div className="px-4 pt-safe pb-4 border-b border-white/10 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-gray-100 tracking-tight">

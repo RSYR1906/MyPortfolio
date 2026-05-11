@@ -3,23 +3,6 @@ import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 import type { AnalystRecommendation, PriceTarget } from '@/types';
 import { NextRequest, NextResponse } from 'next/server';
 
-interface FinnhubRecommendation {
-  period: string;
-  strongBuy: number;
-  buy: number;
-  hold: number;
-  sell: number;
-  strongSell: number;
-}
-
-interface FinnhubPriceTarget {
-  targetHigh: number;
-  targetLow: number;
-  targetMean: number;
-  targetMedian: number;
-  lastUpdated: string;
-}
-
 const SYMBOL_RE = /^[A-Z0-9.]{1,12}$/;
 
 export async function GET(req: NextRequest) {
@@ -36,8 +19,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const [rawRecs, rawTarget] = await Promise.all([
-      finnhubFetch<FinnhubRecommendation[]>('/stock/recommendation', { symbol }, 3600),
-      finnhubFetch<FinnhubPriceTarget>('/stock/price-target', { symbol }, 3600),
+      finnhubFetch<AnalystRecommendation[]>('/stock/recommendation', { symbol }, 3600),
+      finnhubFetch<PriceTarget>('/stock/price-target', { symbol }, 3600),
     ]);
 
     const recommendations: AnalystRecommendation[] = (rawRecs ?? []).slice(0, 4).map((r) => ({

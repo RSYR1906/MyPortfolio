@@ -114,7 +114,7 @@ export function TradeForm({ ticker, onClose }: Props) {
             Max:{" "}
             <button
               type="button"
-              className="inline-flex items-center min-h-[36px] px-1 text-blue-400 hover:underline"
+              className="inline-flex items-center min-h-9 px-1 text-blue-400 hover:underline"
               onClick={() =>
                 setShares(
                   heldShares % 1 === 0
@@ -151,7 +151,7 @@ export function TradeForm({ ticker, onClose }: Props) {
           {livePrice !== undefined && (
             <button
               type="button"
-              className="flex items-center min-h-[36px] px-2 text-[11px] text-blue-400 hover:underline"
+              className="flex items-center min-h-9 px-2 text-[11px] text-blue-400 hover:underline"
               onClick={() => setPricePerShare(livePrice.toFixed(2))}
             >
               Use live: ${livePrice.toFixed(2)}
@@ -177,7 +177,7 @@ export function TradeForm({ ticker, onClose }: Props) {
           type="datetime-local"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-blue-500 [color-scheme:dark]"
+          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-blue-500 scheme-dark"
           required
         />
       </div>

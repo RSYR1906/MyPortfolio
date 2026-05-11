@@ -19,16 +19,16 @@ import { PositionNotes } from "./PositionNotes";
 import { PriceChart } from "./PriceChart";
 import { TimeframeSelector } from "./TimeframeSelector";
 
+const TABS = ["overview", "trade", "news"] as const;
+type Tab = (typeof TABS)[number];
+
 export function FocusView() {
   const ticker = useAssetStore((s) => s.selectedTicker);
   const priceData = useAssetStore((s) => s.prices[ticker]);
 
   const asset = useAssetStore((s) => s.assets.find((a) => a.ticker === ticker));
   const [timeframe, setTimeframe] = useState<Timeframe>("1D");
-  const [mobileTab, setMobileTab] = useState<"overview" | "trade" | "news">(
-    "overview",
-  );
-  const TABS = ["overview", "trade", "news"] as const;
+  const [mobileTab, setMobileTab] = useState<Tab>("overview");
   const bodyRef = useRef<HTMLDivElement>(null);
   useSwipe(bodyRef, {
     onSwipeLeft: () =>
@@ -77,7 +77,7 @@ export function FocusView() {
   return (
     <div ref={bodyRef} className="flex-1 flex flex-col overflow-y-auto">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-[#0d1117]/95 backdrop-blur-sm border-b border-white/10">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-white/10">
         <div className="px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
             <div>
@@ -151,7 +151,7 @@ export function FocusView() {
 
         {/* Mobile section tabs — hidden on md+ where all sections show at once */}
         <div className="md:hidden flex border-t border-white/5">
-          {(["overview", "trade", "news"] as const).map((tab) => (
+          {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setMobileTab(tab)}
@@ -161,7 +161,7 @@ export function FocusView() {
                   : "text-gray-500 hover:text-gray-300 border-transparent"
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab}
             </button>
           ))}
         </div>
@@ -179,7 +179,7 @@ export function FocusView() {
           }`}
         >
           {/* Chart */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+          <div className="rounded-xl border border-white/10 bg-white/2 p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 Chart
@@ -212,14 +212,14 @@ export function FocusView() {
         {/* Trade + History */}
         <div className={mobileTab !== "trade" ? "hidden md:block" : ""}>
           {/* Notes */}
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 mb-6">
+          <div className="rounded-xl border border-white/10 bg-white/2 p-4 mb-6">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
               Notes
             </h3>
             <PositionNotes ticker={ticker} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
+            <div className="rounded-xl border border-white/10 bg-white/2 p-4 space-y-4">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
                 Trade
               </h3>

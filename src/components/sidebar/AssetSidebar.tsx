@@ -129,16 +129,14 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
         setActiveIndex(-1);
         return;
       }
-      if (e.key === "Enter") {
-        if (activeIndex >= 0) {
-          e.preventDefault();
-          if (showingRecents) {
-            selectRecent(recentSearches[activeIndex]);
-          } else {
-            selectSuggestion(suggestions[activeIndex]);
-          }
-          return;
+      if (e.key === "Enter" && activeIndex >= 0) {
+        e.preventDefault();
+        if (showingRecents) {
+          selectRecent(recentSearches[activeIndex]);
+        } else {
+          selectSuggestion(suggestions[activeIndex]);
         }
+        return;
       }
     }
     if (e.key === "Enter") handleWatch();
@@ -210,10 +208,6 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
     }
   }
 
-  function handleRemove(ticker: string) {
-    useAssetStore.getState().removeAsset(ticker);
-  }
-
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -225,7 +219,7 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
     <>
       <aside
         id="asset-sidebar"
-        className="w-full max-w-xs md:w-64 shrink-0 flex flex-col h-full border-r border-white/10 bg-[#0d1117]"
+        className="w-full max-w-xs md:w-64 shrink-0 flex flex-col h-full border-r border-white/10 bg-background"
       >
         {/* Header */}
         <div className="px-4 pt-safe pb-4 border-b border-white/10 flex items-start justify-between">
@@ -432,13 +426,13 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
                 holding={holdings[asset.ticker]}
                 pnl={pnlMap[asset.ticker]}
                 onTradeClick={onTradeClick}
-                onRemove={handleRemove}
+                onRemove={(t) => useAssetStore.getState().removeAsset(t)}
               />
             ))
           )}
           {/* Scroll fade — indicates more content below */}
           {assets.length > 0 && (
-            <div className="sticky bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0d1117] to-transparent pointer-events-none" />
+            <div className="sticky bottom-0 left-0 right-0 h-8 bg-linear-to-t from-background to-transparent pointer-events-none" />
           )}
         </div>
 
@@ -446,7 +440,7 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
         {totalCost > 0 && (
           <button
             onClick={() => setPortfolioOpen(true)}
-            className="border-t border-white/10 px-4 py-3 w-full text-left hover:bg-white/[0.03] transition-colors group"
+            className="border-t border-white/10 px-4 py-3 w-full text-left hover:bg-white/3 transition-colors group"
           >
             <p className="text-[11px] text-gray-500 uppercase tracking-wider flex items-center justify-between">
               Total Portfolio
@@ -470,7 +464,7 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
         {/* Sign-out */}
         <button
           onClick={handleSignOut}
-          className="border-t border-white/10 px-4 py-3 w-full text-left text-xs text-gray-500 hover:text-gray-300 hover:bg-white/[0.03] transition-colors flex items-center gap-2"
+          className="border-t border-white/10 px-4 py-3 w-full text-left text-xs text-gray-500 hover:text-gray-300 hover:bg-white/3 transition-colors flex items-center gap-2"
         >
           <span>↩</span> Sign out
         </button>

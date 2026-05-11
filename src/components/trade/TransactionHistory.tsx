@@ -53,7 +53,7 @@ export function TransactionHistory({ ticker }: Props) {
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
+    <div className="rounded-xl border border-white/10 bg-white/2 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
           Transaction History
@@ -71,7 +71,7 @@ export function TransactionHistory({ ticker }: Props) {
         <>
           {/* Realized P&L summary (only shown if there are sell transactions) */}
           {realized && (
-            <div className="flex items-center justify-between rounded-lg bg-white/[0.03] border border-white/5 px-3 py-2">
+            <div className="flex items-center justify-between rounded-lg bg-white/3 border border-white/5 px-3 py-2">
               <span className="text-xs text-gray-500">Realized P&amp;L</span>
               <span
                 className={`text-xs font-mono font-semibold ${
@@ -90,7 +90,7 @@ export function TransactionHistory({ ticker }: Props) {
             {visible.map((tx) => (
               <div
                 key={tx.id}
-                className="flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/5"
+                className="flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg bg-white/3 border border-white/5"
               >
                 <div className="flex items-start gap-2 min-w-0">
                   <span

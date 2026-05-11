@@ -16,13 +16,12 @@ export function usePortfolio() {
   const holdings = useMemo(() => computeHoldings(transactions), [transactions]);
   const pnlMap = useMemo(() => computePnL(holdings, prices), [holdings, prices]);
 
-  const totalValue = useMemo(
-    () => Object.values(pnlMap).reduce((sum, p) => sum + p.currentValue, 0),
-    [pnlMap],
-  );
-  const totalCost = useMemo(
-    () => Object.values(holdings).reduce((sum, h) => sum + h.totalCost, 0),
-    [holdings],
+  const { totalValue, totalCost } = useMemo(
+    () => ({
+      totalValue: Object.values(pnlMap).reduce((sum, p) => sum + p.currentValue, 0),
+      totalCost: Object.values(holdings).reduce((sum, h) => sum + h.totalCost, 0),
+    }),
+    [pnlMap, holdings],
   );
 
   return { holdings, pnlMap, totalValue, totalCost };

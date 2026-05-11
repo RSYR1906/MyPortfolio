@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { DashboardView } from "@/components/dashboard/DashboardView";
 import { FocusView } from "@/components/focus/FocusView";
 import { AssetSidebar } from "@/components/sidebar/AssetSidebar";
 import { TradeModal } from "@/components/trade/TradeModal";
@@ -9,15 +10,19 @@ import { usePortfolioSync } from "@/hooks/usePortfolioSync";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useSwipe } from "@/hooks/useSwipe";
 import { createClient } from "@/lib/supabase/client";
+import { useAssetStore } from "@/store/useAssetStore";
 import { useEffect, useRef, useState } from "react";
 
 export default function Home() {
   const [userId, setUserId] = useState<string | null>(null);
   const [tradeModalTicker, setTradeModalTicker] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [view, setView] = useState<"dashboard" | "focus">("dashboard");
   const mainRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { pullDistance, refreshing, threshold } = usePullToRefresh(mainRef);
+  const setSelectedTicker = useAssetStore((s) => s.setSelectedTicker);
+  const selectedTicker = useAssetStore((s) => s.selectedTicker);
 
   // Swipe right anywhere on main content → open sidebar (mobile only)
   useSwipe(mainRef, { onSwipeRight: () => setSidebarOpen(true) });
@@ -38,10 +43,16 @@ export default function Home() {
   // Boot live WebSocket price feed
   useLivePrices();
 
+  function handleSelectTicker(ticker: string) {
+    setSelectedTicker(ticker);
+    setView("focus");
+    setSidebarOpen(false);
+  }
+
   // Loading screen — shown until Supabase data is ready
   if (!ready) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-6 bg-[#0d1117]">
+      <div className="flex h-full flex-col items-center justify-center gap-6 bg-background">
         {/* Concentric spinning rings */}
         <div className="relative flex items-center justify-center w-20 h-20">
           {/* Outer ring — slow clockwise */}
@@ -64,7 +75,7 @@ export default function Home() {
   // Load error — Supabase unreachable or auth failure
   if (syncError) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 bg-[#0d1117] p-6 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-4 bg-background p-6 text-center">
         <p className="text-sm text-red-400">{syncError}</p>
         <button
           onClick={() => window.location.reload()}
@@ -98,6 +109,7 @@ export default function Home() {
         <AssetSidebar
           onTradeClick={(ticker) => setTradeModalTicker(ticker)}
           onClose={() => setSidebarOpen(false)}
+          onSelect={handleSelectTicker}
         />
       </div>
 
@@ -106,18 +118,30 @@ export default function Home() {
         ref={mainRef}
         className="flex-1 flex flex-col min-w-0 overflow-hidden"
       >
-        {/* Mobile top bar with hamburger — always on top so indicator appears below it */}
-        <div className="md:hidden flex items-center gap-3 px-4 pt-safe border-b border-white/10 bg-[#0d1117] shrink-0">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            aria-label="Open sidebar"
-            aria-expanded={sidebarOpen}
-            aria-controls="asset-sidebar"
-            className="flex items-center justify-center min-w-[44px] min-h-[44px] -ml-2 text-gray-400 hover:text-gray-200 transition-colors text-xl"
-          >
-            ☰
-          </button>
-          <span className="text-sm font-semibold text-gray-100">Portfolio</span>
+        {/* Mobile top bar */}
+        <div className="md:hidden flex items-center gap-2 px-3 pt-safe border-b border-white/10 bg-background shrink-0">
+          {view === "focus" ? (
+            <button
+              onClick={() => setView("dashboard")}
+              aria-label="Back to dashboard"
+              className="flex items-center gap-1.5 min-w-11 min-h-11 -ml-1 text-gray-400 hover:text-gray-200 transition-colors text-sm"
+            >
+              ← <span className="text-xs">Dashboard</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open sidebar"
+              aria-expanded={sidebarOpen}
+              aria-controls="asset-sidebar"
+              className="flex items-center justify-center min-w-11 min-h-11 -ml-2 text-gray-400 hover:text-gray-200 transition-colors text-xl"
+            >
+              ☰
+            </button>
+          )}
+          <span className="text-sm font-semibold text-gray-100">
+            {view === "focus" ? selectedTicker : "Portfolio"}
+          </span>
         </div>
 
         {/* Pull-to-refresh indicator (mobile only) */}
@@ -148,7 +172,14 @@ export default function Home() {
         </div>
 
         <ErrorBoundary>
-          <FocusView />
+          {view === "dashboard" ? (
+            <DashboardView
+              onSelect={handleSelectTicker}
+              onTradeClick={(ticker) => setTradeModalTicker(ticker)}
+            />
+          ) : (
+            <FocusView />
+          )}
         </ErrorBoundary>
       </div>
 

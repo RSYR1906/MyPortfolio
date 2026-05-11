@@ -16,9 +16,11 @@ interface Props {
   onTradeClick: (ticker: string) => void;
   /** Called when the mobile close (✕) button is pressed. */
   onClose?: () => void;
+  /** Called (in addition to setSelectedTicker) when an asset row is activated. */
+  onSelect?: (ticker: string) => void;
 }
 
-export function AssetSidebar({ onTradeClick, onClose }: Props) {
+export function AssetSidebar({ onTradeClick, onClose, onSelect }: Props) {
   const assets = useAssetStore((s) => s.assets);
   const router = useRouter();
 
@@ -427,6 +429,7 @@ export function AssetSidebar({ onTradeClick, onClose }: Props) {
                 pnl={pnlMap[asset.ticker]}
                 onTradeClick={onTradeClick}
                 onRemove={(t) => useAssetStore.getState().removeAsset(t)}
+                onSelect={onSelect}
               />
             ))
           )}

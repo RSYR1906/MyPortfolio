@@ -13,6 +13,8 @@ interface Props {
   pnl?: PnL;
   onTradeClick: (ticker: string) => void;
   onRemove: (ticker: string) => void;
+  /** Called (in addition to setSelectedTicker) when the row is activated. */
+  onSelect?: (ticker: string) => void;
 }
 
 export function AssetRow({
@@ -21,6 +23,7 @@ export function AssetRow({
   pnl,
   onTradeClick,
   onRemove,
+  onSelect,
 }: Props) {
   const { ticker, name, accentColor } = asset;
 
@@ -60,13 +63,17 @@ export function AssetRow({
       className={`group flex flex-col gap-1 px-3 py-3 cursor-pointer transition-colors border-l-2 ${
         isSelected
           ? "bg-white/5 border-blue-400"
-          : "border-transparent hover:bg-white/[0.03] hover:border-white/20"
+          : "border-transparent hover:bg-white/3 hover:border-white/20"
       }`}
-      onClick={() => setSelectedTicker(ticker)}
+      onClick={() => {
+        setSelectedTicker(ticker);
+        onSelect?.(ticker);
+      }}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           setSelectedTicker(ticker);
+          onSelect?.(ticker);
         }
       }}
     >
@@ -88,7 +95,7 @@ export function AssetRow({
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-gray-500 truncate max-w-[120px]">
+            <p className="text-[11px] text-gray-500 truncate max-w-30">
               {name}
             </p>
           </div>
@@ -154,7 +161,7 @@ export function AssetRow({
             e.stopPropagation();
             onTradeClick(ticker);
           }}
-          className="flex items-center justify-center min-h-[36px] px-3 text-xs text-blue-400 hover:text-blue-300 rounded-md hover:bg-blue-400/10 transition-colors"
+          className="flex items-center justify-center min-h-9 px-3 text-xs text-blue-400 hover:text-blue-300 rounded-md hover:bg-blue-400/10 transition-colors"
         >
           + Trade
         </button>
@@ -163,7 +170,7 @@ export function AssetRow({
             e.stopPropagation();
             onRemove(ticker);
           }}
-          className="flex items-center justify-center min-h-[36px] px-3 text-xs text-red-400/60 hover:text-red-400 rounded-md hover:bg-red-400/10 transition-colors"
+          className="flex items-center justify-center min-h-9 px-3 text-xs text-red-400/60 hover:text-red-400 rounded-md hover:bg-red-400/10 transition-colors"
         >
           × Remove
         </button>

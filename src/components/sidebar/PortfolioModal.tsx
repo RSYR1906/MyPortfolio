@@ -108,13 +108,18 @@ export function PortfolioModal({ onClose }: Props) {
   const { symbol, fmt, fmtPnL, convert } = useCurrency();
 
   return (
-    <Modal onClose={onClose} labelId="portfolio-modal-title">
-      <div className="bg-[#161b22] border border-white/10 rounded-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl anim-modal-in">
+    <Modal onClose={onClose} labelId="portfolio-modal-title" sheet>
+      <div className="bg-[#161b22] border-t border-x border-white/10 rounded-t-2xl md:rounded-xl md:border w-full max-w-4xl max-h-[88svh] md:max-h-[92vh] overflow-y-auto shadow-2xl anim-modal-in">
+        {/* Drag handle (mobile only) */}
+        <div className="md:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+          <div className="w-8 h-1 rounded-full bg-white/20" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-4 border-b border-white/10 shrink-0">
           <h2
             id="portfolio-modal-title"
-            className="text-base font-bold text-gray-100"
+            className="text-sm sm:text-base font-bold text-gray-100"
           >
             Portfolio Overview
           </h2>
@@ -126,10 +131,10 @@ export function PortfolioModal({ onClose }: Props) {
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="p-3 sm:p-6 space-y-3 sm:space-y-6">
           {/* Summary stats */}
           <div
-            className={`grid gap-3 ${hasRealized ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}
+            className={`grid gap-2 sm:gap-3 ${hasRealized ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}
           >
             {(
               [
@@ -137,7 +142,8 @@ export function PortfolioModal({ onClose }: Props) {
                 { label: "Total Cost", value: fmt(totalCost) },
                 {
                   label: "Unrealized P&L",
-                  value: `${fmtPnL(totalUnrealizedPnL)} (${formatPct(totalUnrealizedPnLPct)})`,
+                  value: fmtPnL(totalUnrealizedPnL),
+                  sub: formatPct(totalUnrealizedPnLPct),
                   color:
                     totalUnrealizedPnL >= 0
                       ? "text-emerald-400"
@@ -155,20 +161,32 @@ export function PortfolioModal({ onClose }: Props) {
                       },
                     ]
                   : []),
-              ] as { label: string; value: string; color?: string }[]
-            ).map(({ label, value, color }) => (
+              ] as {
+                label: string;
+                value: string;
+                sub?: string;
+                color?: string;
+              }[]
+            ).map(({ label, value, sub, color }) => (
               <div
                 key={label}
-                className="rounded-lg bg-white/[0.03] border border-white/5 px-4 py-3"
+                className="rounded-lg bg-white/3 border border-white/5 px-3 py-2 sm:px-4 sm:py-3"
               >
-                <p className="text-[11px] text-gray-500 uppercase tracking-wider">
+                <p className="text-[10px] sm:text-[11px] text-gray-500 uppercase tracking-wider">
                   {label}
                 </p>
                 <p
-                  className={`text-sm font-mono font-semibold mt-1 ${color ?? "text-gray-100"}`}
+                  className={`text-xs sm:text-sm font-mono font-semibold mt-0.5 sm:mt-1 ${color ?? "text-gray-100"}`}
                 >
                   {value}
                 </p>
+                {sub && (
+                  <p
+                    className={`text-[10px] font-mono ${color ?? "text-gray-400"} opacity-80`}
+                  >
+                    {sub}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -178,10 +196,13 @@ export function PortfolioModal({ onClose }: Props) {
               No holdings yet — add transactions to see your breakdown.
             </p>
           ) : (
-            <div className="flex flex-col md:flex-row gap-6 items-start">
-              {/* Donut + legend */}
-              <div className="shrink-0 flex flex-col items-center gap-4">
-                <svg width="160" height="160" viewBox="0 0 160 160">
+            <div className="flex flex-col md:flex-row gap-4 sm:gap-6 items-start">
+              {/* Donut + legend — side-by-side on mobile, stacked on md */}
+              <div className="shrink-0 flex flex-row md:flex-col items-center gap-3 sm:gap-4 w-full md:w-auto">
+                <svg
+                  className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 shrink-0"
+                  viewBox="0 0 160 160"
+                >
                   {slices.map((s, i) => (
                     <path
                       key={s.ticker}
@@ -211,16 +232,16 @@ export function PortfolioModal({ onClose }: Props) {
                       fontFamily: "monospace",
                     }}
                   >
-                    ${symbol}
+                    {symbol}
                     {convert(totalValue).toFixed(0)}
                   </text>
                 </svg>
 
-                <div className="flex flex-col gap-1.5 w-full min-w-[120px]">
+                <div className="flex flex-col gap-1 sm:gap-1.5 flex-1 md:w-full md:min-w-30">
                   {slices.map((s) => (
                     <div key={s.ticker} className="flex items-center gap-2">
                       <span
-                        className="w-2.5 h-2.5 rounded-sm shrink-0"
+                        className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-sm shrink-0"
                         style={{ backgroundColor: s.color }}
                       />
                       <span className="text-[11px] text-gray-300 font-semibold">
@@ -239,22 +260,27 @@ export function PortfolioModal({ onClose }: Props) {
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="text-gray-500 border-b border-white/10">
-                      {[
-                        "Ticker",
-                        "Shares",
-                        "Avg Cost",
-                        "Price",
-                        "Value",
-                        "Unrlzd P&L",
-                        "Rlzd P&L",
-                      ].map((h, i) => (
-                        <th
-                          key={h}
-                          className={`pb-2 font-medium pr-3 ${i === 0 ? "text-left" : "text-right"}`}
-                        >
-                          {h}
-                        </th>
-                      ))}
+                      <th className="pb-2 font-medium pr-3 text-left">
+                        Ticker
+                      </th>
+                      <th className="pb-2 font-medium pr-3 text-right">
+                        Shares
+                      </th>
+                      <th className="pb-2 font-medium pr-3 text-right hidden sm:table-cell">
+                        Avg Cost
+                      </th>
+                      <th className="pb-2 font-medium pr-3 text-right hidden sm:table-cell">
+                        Price
+                      </th>
+                      <th className="pb-2 font-medium pr-3 text-right">
+                        Value
+                      </th>
+                      <th className="pb-2 font-medium pr-3 text-right">
+                        P&amp;L
+                      </th>
+                      <th className="pb-2 font-medium text-right hidden sm:table-cell">
+                        Rlzd P&amp;L
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -272,10 +298,10 @@ export function PortfolioModal({ onClose }: Props) {
                               ? h.netShares
                               : h.netShares.toFixed(4)}
                           </td>
-                          <td className="py-2 text-right font-mono pr-3">
+                          <td className="py-2 text-right font-mono pr-3 hidden sm:table-cell">
                             {fmt(h.avgCostBasis)}
                           </td>
-                          <td className="py-2 text-right font-mono pr-3">
+                          <td className="py-2 text-right font-mono pr-3 hidden sm:table-cell">
                             {price !== undefined ? fmt(price) : "—"}
                           </td>
                           <td className="py-2 text-right font-mono pr-3">
@@ -288,12 +314,20 @@ export function PortfolioModal({ onClose }: Props) {
                                 : "text-red-400"
                             }`}
                           >
-                            {pnl
-                              ? `${fmtPnL(pnl.unrealizedPnL)} (${formatPct(pnl.unrealizedPnLPct)})`
-                              : "—"}
+                            {pnl ? (
+                              <>
+                                <span>{fmtPnL(pnl.unrealizedPnL)}</span>
+                                <span className="hidden sm:inline">
+                                  {" "}
+                                  ({formatPct(pnl.unrealizedPnLPct)})
+                                </span>
+                              </>
+                            ) : (
+                              "—"
+                            )}
                           </td>
                           <td
-                            className={`py-2 text-right font-mono ${
+                            className={`py-2 text-right font-mono hidden sm:table-cell ${
                               realized
                                 ? realized.realizedPnL >= 0
                                   ? "text-emerald-400"

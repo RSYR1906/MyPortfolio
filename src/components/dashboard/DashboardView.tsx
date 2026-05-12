@@ -166,29 +166,30 @@ export function DashboardView({ onSelect, onTradeClick }: Props) {
                   <>
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] text-gray-500">
-                        {holding.netShares % 1 === 0
-                          ? holding.netShares
-                          : holding.netShares.toFixed(2)}{" "}
-                        sh
+                        {balanceHidden
+                          ? MASK
+                          : `${holding.netShares % 1 === 0 ? holding.netShares : holding.netShares.toFixed(2)} sh`}
                       </span>
                       <span className="text-[11px] font-mono text-gray-300">
-                        {fmt(pnl.currentValue)}
+                        {balanceHidden ? "" : fmt(pnl.currentValue)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mt-0.5">
-                      <span className="text-[10px] text-gray-600">
-                        avg {fmt(holding.avgCostBasis)}
-                      </span>
-                      <span
-                        className={`text-[11px] font-mono font-semibold ${
-                          pnl.unrealizedPnL >= 0
-                            ? "text-emerald-400"
-                            : "text-red-400"
-                        }`}
-                      >
-                        {fmtPnL(pnl.unrealizedPnL)}
-                      </span>
-                    </div>
+                    {!balanceHidden && (
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-[10px] text-gray-600">
+                          avg {fmt(holding.avgCostBasis)}
+                        </span>
+                        <span
+                          className={`text-[11px] font-mono font-semibold ${
+                            pnl.unrealizedPnL >= 0
+                              ? "text-emerald-400"
+                              : "text-red-400"
+                          }`}
+                        >
+                          {fmtPnL(pnl.unrealizedPnL)}
+                        </span>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="flex items-center justify-between">

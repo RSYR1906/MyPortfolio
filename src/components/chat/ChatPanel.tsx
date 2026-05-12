@@ -3,6 +3,8 @@
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useChat } from "@ai-sdk/react";
+import type { DynamicToolUIPart } from "ai";
+import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState } from "react";
 import { TradeConfirmCard } from "./TradeConfirmCard";
 
@@ -27,10 +29,27 @@ export function ChatPanel({ onClose }: Props) {
   // don't re-render the card after the user acts.
   const [handled, setHandled] = useState<Set<string>>(new Set());
 
-  const { messages, input, handleInputChange, handleSubmit, status } = useChat({
-    api: "/api/chat",
-    body: { assets, holdings },
+  // Refs keep transport stable while always sending fresh portfolio data
+  const assetsRef = useRef(assets);
+  const holdingsRef = useRef(holdings);
+  assetsRef.current = assets;
+  holdingsRef.current = holdings;
+
+  const transportRef = useRef(
+    new DefaultChatTransport({
+      api: "/api/chat",
+      body: () => ({
+        assets: assetsRef.current,
+        holdings: holdingsRef.current,
+      }),
+    }),
+  );
+
+  const { messages, sendMessage, status } = useChat({
+    transport: transportRef.current,
   });
+
+  const [input, setInput] = useState("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +66,6 @@ export function ChatPanel({ onClose }: Props) {
 
   function handleConfirm(toolCallId: string, trade: Trade) {
     addTransaction({
-      id: crypto.randomUUID(),
       ticker: trade.ticker,
       type: trade.type,
       shares: trade.shares,
@@ -104,11 +122,7 @@ export function ChatPanel({ onClose }: Props) {
               ].map((ex) => (
                 <button
                   key={ex}
-                  onClick={() =>
-                    handleInputChange({
-                      target: { value: ex },
-                    } as React.ChangeEvent<HTMLInputElement>)
-                  }
+                  onClick={() => setInput(ex)}
                   className="w-full text-left text-xs text-gray-500 hover:text-gray-300 hover:bg-white/5 rounded-lg px-3 py-2 transition-colors border border-white/5"
                 >
                   &ldquo;{ex}&rdquo;
@@ -121,20 +135,35 @@ export function ChatPanel({ onClose }: Props) {
         {messages.map((msg) => {
           const isUser = msg.role === "user";
 
-          // Collect any unhandled record_trade tool invocations from this message
+          // Extract text from parts
+          const textContent = msg.parts
+            .filter(
+              (p): p is { type: "text"; text: string } & typeof p =>
+                p.type === "text",
+            )
+            .map((p) => (p as unknown as { text: string }).text)
+            .join("");
+
+          // Collect unhandled record_trade tool invocations (output-available state)
           const pendingTrades =
             msg.role === "assistant"
-              ? (msg.toolInvocations ?? []).filter(
-                  (inv) =>
-                    inv.toolName === "record_trade" &&
-                    inv.state === "result" &&
-                    !handled.has(inv.toolCallId),
+              ? msg.parts.filter(
+                  (
+                    p,
+                  ): p is DynamicToolUIPart & {
+                    state: "output-available";
+                    output: unknown;
+                  } =>
+                    p.type === "dynamic-tool" &&
+                    (p as DynamicToolUIPart).toolName === "record_trade" &&
+                    (p as DynamicToolUIPart).state === "output-available" &&
+                    !handled.has((p as DynamicToolUIPart).toolCallId),
                 )
               : [];
 
           return (
             <div key={msg.id}>
-              {msg.content && (
+              {textContent && (
                 <div
                   className={`flex ${isUser ? "justify-end" : "justify-start"}`}
                 >
@@ -145,20 +174,19 @@ export function ChatPanel({ onClose }: Props) {
                         : "bg-white/8 text-gray-200 rounded-bl-sm"
                     }`}
                   >
-                    {msg.content}
+                    {textContent}
                   </div>
                 </div>
               )}
 
-              {pendingTrades.map((inv) => {
-                if (inv.state !== "result") return null;
-                const trade = inv.result as Trade;
+              {pendingTrades.map((part) => {
+                const trade = part.output as Trade;
                 return (
                   <TradeConfirmCard
-                    key={inv.toolCallId}
+                    key={part.toolCallId}
                     trade={trade}
-                    onConfirm={() => handleConfirm(inv.toolCallId, trade)}
-                    onCancel={() => handleCancel(inv.toolCallId)}
+                    onConfirm={() => handleConfirm(part.toolCallId, trade)}
+                    onCancel={() => handleCancel(part.toolCallId)}
                   />
                 );
               })}
@@ -185,13 +213,18 @@ export function ChatPanel({ onClose }: Props) {
 
       {/* Input */}
       <form
-        onSubmit={handleSubmit}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!input.trim() || isLoading) return;
+          sendMessage({ text: input });
+          setInput("");
+        }}
         className="flex items-center gap-2 px-3 py-3 border-t border-white/10 shrink-0"
       >
         <input
           ref={inputRef}
           value={input}
-          onChange={handleInputChange}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="e.g. I bought 10 NVDA at $120…"
           disabled={isLoading}
           className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-100 placeholder:text-gray-600 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/30 transition-all disabled:opacity-50"

@@ -1,6 +1,7 @@
 import { checkRateLimit } from "@/lib/rateLimit";
 import { google } from "@ai-sdk/google";
-import { streamText, tool } from "ai";
+import type { UIMessage } from "ai";
+import { convertToModelMessages, streamText, tool } from "ai";
 import { headers } from "next/headers";
 import { z } from "zod";
 
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
     return new Response("Rate limit exceeded", { status: 429 });
   }
 
-  const { messages, assets, holdings } = await req.json();
+  const { messages, assets, holdings }: { messages: UIMessage[]; assets: { ticker: string; name: string }[]; holdings: Record<string, { netShares: number; avgCostBasis: number }> } = await req.json();
 
   // Build a concise portfolio context string for the system prompt
   const today = new Date().toISOString().split("T")[0];
@@ -52,15 +53,14 @@ Your job:
   const result = streamText({
     model: google("gemini-2.0-flash"),
     system: systemPrompt,
-    messages,
+    messages: await convertToModelMessages(messages),
     tools: {
       record_trade: tool({
         description:
           "Record a buy or sell transaction in the user's portfolio. Call this after confirming the trade details with the user.",
-        parameters: z.object({
+        inputSchema: z.object({
           ticker: z
             .string()
-            .toUpperCase()
             .describe("The official stock/ETF ticker symbol (e.g. NVDA, AAPL)"),
           type: z.enum(["buy", "sell"]).describe("Whether this is a buy or sell"),
           shares: z
@@ -81,11 +81,11 @@ Your job:
         execute: async ({ ticker, type, shares, pricePerShare, date }) => {
           // The actual addTransaction call happens client-side after user confirms.
           // This just echoes back the parsed trade for the confirmation card.
-          return { ticker, type, shares, pricePerShare, date: date ?? today };
+          return { ticker: ticker.toUpperCase(), type, shares, pricePerShare, date: date ?? today };
         },
       }),
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }

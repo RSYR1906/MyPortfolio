@@ -111,13 +111,8 @@ export function PortfolioModal({ onClose }: Props) {
   const MASK = "••••";
 
   return (
-    <Modal onClose={onClose} labelId="portfolio-modal-title" sheet>
-      <div className="bg-[#161b22] border-t border-x border-white/10 rounded-t-2xl md:rounded-xl md:border w-full max-w-4xl max-h-[88svh] md:max-h-[92vh] overflow-y-auto shadow-2xl anim-modal-in">
-        {/* Drag handle (mobile only) */}
-        <div className="md:hidden flex justify-center pt-2.5 pb-1 shrink-0">
-          <div className="w-8 h-1 rounded-full bg-white/20" />
-        </div>
-
+    <Modal onClose={onClose} labelId="portfolio-modal-title">
+      <div className="bg-[#161b22] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl anim-modal-in">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-4 border-b border-white/10 shrink-0">
           <h2

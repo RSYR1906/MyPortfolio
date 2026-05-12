@@ -3,7 +3,6 @@
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useChat } from "@ai-sdk/react";
-import type { DynamicToolUIPart } from "ai";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState } from "react";
 import { TradeConfirmCard } from "./TradeConfirmCard";
@@ -144,21 +143,28 @@ export function ChatPanel({ onClose }: Props) {
             .map((p) => (p as unknown as { text: string }).text)
             .join("");
 
-          // Collect unhandled record_trade tool invocations (output-available state)
+          // Collect unhandled record_trade tool invocations (output-available state).
+          // Static tools from streamText arrive as type 'tool-{name}'; dynamic tools
+          // arrive as type 'dynamic-tool' with a toolName field.
           const pendingTrades =
             msg.role === "assistant"
-              ? msg.parts.filter(
-                  (
-                    p,
-                  ): p is DynamicToolUIPart & {
-                    state: "output-available";
-                    output: unknown;
-                  } =>
-                    p.type === "dynamic-tool" &&
-                    (p as DynamicToolUIPart).toolName === "record_trade" &&
-                    (p as DynamicToolUIPart).state === "output-available" &&
-                    !handled.has((p as DynamicToolUIPart).toolCallId),
-                )
+              ? msg.parts.filter((p) => {
+                  const part = p as {
+                    type: string;
+                    toolCallId?: string;
+                    toolName?: string;
+                    state?: string;
+                  };
+                  const isOurTool =
+                    part.type === "tool-record_trade" ||
+                    (part.type === "dynamic-tool" &&
+                      part.toolName === "record_trade");
+                  return (
+                    isOurTool &&
+                    part.state === "output-available" &&
+                    !handled.has(part.toolCallId ?? "")
+                  );
+                })
               : [];
 
           return (
@@ -180,13 +186,16 @@ export function ChatPanel({ onClose }: Props) {
               )}
 
               {pendingTrades.map((part) => {
-                const trade = part.output as Trade;
+                const p = part as unknown as {
+                  toolCallId: string;
+                  output: Trade;
+                };
                 return (
                   <TradeConfirmCard
-                    key={part.toolCallId}
-                    trade={trade}
-                    onConfirm={() => handleConfirm(part.toolCallId, trade)}
-                    onCancel={() => handleCancel(part.toolCallId)}
+                    key={p.toolCallId}
+                    trade={p.output}
+                    onConfirm={() => handleConfirm(p.toolCallId, p.output)}
+                    onCancel={() => handleCancel(p.toolCallId)}
                   />
                 );
               })}

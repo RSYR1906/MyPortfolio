@@ -1,7 +1,7 @@
 import { checkRateLimit } from "@/lib/rateLimit";
 import { google } from "@ai-sdk/google";
 import type { UIMessage } from "ai";
-import { convertToModelMessages, streamText, tool } from "ai";
+import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
 import { headers } from "next/headers";
 import { z } from "zod";
 
@@ -54,6 +54,7 @@ Your job:
     model: google("gemini-2.0-flash"),
     system: systemPrompt,
     messages: await convertToModelMessages(messages),
+    stopWhen: stepCountIs(3),
     tools: {
       record_trade: tool({
         description:

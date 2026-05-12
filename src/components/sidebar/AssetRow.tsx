@@ -3,6 +3,7 @@
 import { useCurrency } from "@/hooks/useCurrency";
 import { formatPct } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
+import { useCurrencyStore } from "@/store/useCurrencyStore";
 import type { Asset, Holding, PnL } from "@/types";
 import { useEffect, useRef, useState } from "react";
 
@@ -36,6 +37,8 @@ export function AssetRow({
   const isPositive = (changePct ?? 0) >= 0;
 
   const { fmt, fmtPnL } = useCurrency();
+  const balanceHidden = useCurrencyStore((s) => s.balanceHidden);
+  const MASK = "••••";
 
   // Flash animation on price change
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
@@ -139,17 +142,18 @@ export function AssetRow({
       {holding && pnl && (
         <div className="flex items-center justify-between mt-0.5 pl-4">
           <span className="text-[11px] text-gray-500">
-            {holding.netShares % 1 === 0
-              ? holding.netShares
-              : holding.netShares.toFixed(4)}{" "}
-            shares
+            {balanceHidden
+              ? MASK
+              : `${holding.netShares % 1 === 0 ? holding.netShares : holding.netShares.toFixed(4)} shares`}
           </span>
           <span
             className={`text-[11px] font-mono ${
               pnl.unrealizedPnL >= 0 ? "text-emerald-400" : "text-red-400"
             }`}
           >
-            {fmtPnL(pnl.unrealizedPnL)} ({formatPct(pnl.unrealizedPnLPct)})
+            {balanceHidden
+              ? MASK
+              : `${fmtPnL(pnl.unrealizedPnL)} (${formatPct(pnl.unrealizedPnLPct)})`}
           </span>
         </div>
       )}

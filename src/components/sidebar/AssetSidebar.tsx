@@ -29,6 +29,8 @@ export function AssetSidebar({ onTradeClick, onClose, onSelect }: Props) {
 
   const { currency, fmt, fmtPnL } = useCurrency();
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
+  const balanceHidden = useCurrencyStore((s) => s.balanceHidden);
+  const MASK = "••••";
 
   const [portfolioOpen, setPortfolioOpen] = useState(false);
 
@@ -453,12 +455,12 @@ export function AssetSidebar({ onTradeClick, onClose, onSelect }: Props) {
             </p>
             <div className="flex items-center justify-between mt-1">
               <span className="text-sm font-mono text-gray-100">
-                {fmt(totalValue)}
+                {balanceHidden ? MASK : fmt(totalValue)}
               </span>
               <span
                 className={`text-sm font-mono ${totalPnL >= 0 ? "text-emerald-400" : "text-red-400"}`}
               >
-                {fmtPnL(totalPnL)}
+                {balanceHidden ? MASK : fmtPnL(totalPnL)}
               </span>
             </div>
           </button>

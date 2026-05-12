@@ -9,6 +9,7 @@ import {
   formatPct,
 } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
+import { useCurrencyStore } from "@/store/useCurrencyStore";
 import { useMemo } from "react";
 
 // ── SVG donut helpers ────────────────────────────────────────────────────────
@@ -106,6 +107,8 @@ export function PortfolioModal({ onClose }: Props) {
   const hasRealized = Object.keys(realizedMap).length > 0;
 
   const { symbol, fmt, fmtPnL, convert } = useCurrency();
+  const balanceHidden = useCurrencyStore((s) => s.balanceHidden);
+  const MASK = "••••";
 
   return (
     <Modal onClose={onClose} labelId="portfolio-modal-title" sheet>
@@ -138,12 +141,20 @@ export function PortfolioModal({ onClose }: Props) {
           >
             {(
               [
-                { label: "Total Value", value: fmt(totalValue) },
-                { label: "Total Cost", value: fmt(totalCost) },
+                {
+                  label: "Total Value",
+                  value: balanceHidden ? MASK : fmt(totalValue),
+                },
+                {
+                  label: "Total Cost",
+                  value: balanceHidden ? MASK : fmt(totalCost),
+                },
                 {
                   label: "Unrealized P&L",
-                  value: fmtPnL(totalUnrealizedPnL),
-                  sub: formatPct(totalUnrealizedPnLPct),
+                  value: balanceHidden ? MASK : fmtPnL(totalUnrealizedPnL),
+                  sub: balanceHidden
+                    ? undefined
+                    : formatPct(totalUnrealizedPnLPct),
                   color:
                     totalUnrealizedPnL >= 0
                       ? "text-emerald-400"

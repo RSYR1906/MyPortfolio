@@ -1,6 +1,7 @@
 "use client";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ChatButton } from "@/components/chat/ChatButton";
 import { DashboardView } from "@/components/dashboard/DashboardView";
 import { FocusView } from "@/components/focus/FocusView";
 import { AssetSidebar } from "@/components/sidebar/AssetSidebar";
@@ -189,6 +190,8 @@ export default function Home() {
           onClose={() => setTradeModalTicker(null)}
         />
       )}
+
+      <ChatButton />
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import { checkRateLimit } from "@/lib/rateLimit";
-import { google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import type { UIMessage } from "ai";
 import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
 import { headers } from "next/headers";
 import { z } from "zod";
 
 export const maxDuration = 30;
+export const runtime = "nodejs";
 
 interface AssetContext {
   ticker: string;
@@ -40,6 +41,13 @@ function getRequestIp(forwardedFor: string | null): string {
   if (!forwardedFor) return "127.0.0.1";
   const [firstIp] = forwardedFor.split(",");
   return firstIp.trim();
+}
+
+function getGoogleApiKey(): string | null {
+  const key =
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? process.env.GOOGLE_API_KEY;
+  if (!key) return null;
+  return key.trim() || null;
 }
 
 function buildSystemPrompt(
@@ -84,6 +92,15 @@ export async function POST(req: Request) {
   const { messages, assets, holdings } =
     (await req.json()) as ChatRequestBody;
 
+  const googleApiKey = getGoogleApiKey();
+  if (!googleApiKey) {
+    return new Response(
+      "Missing Google AI API key on server. Set GOOGLE_GENERATIVE_AI_API_KEY (or GOOGLE_API_KEY) in Vercel project environment variables and redeploy.",
+      { status: 500 },
+    );
+  }
+  const google = createGoogleGenerativeAI({ apiKey: googleApiKey });
+
   // Build a concise portfolio context string for the system prompt
   const today = new Date().toISOString().split("T")[0];
   const systemPrompt = buildSystemPrompt(today, assets, holdings);
@@ -118,7 +135,14 @@ export async function POST(req: Request) {
     return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Chat route failed", error);
-    return new Response("AI assistant is unavailable right now.", {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/api key|unauthorized|permission|forbidden|401|403/i.test(message)) {
+      return new Response(
+        "Google AI authentication failed. Verify your Vercel environment variable and key restrictions.",
+        { status: 401 },
+      );
+    }
+    return new Response(`AI assistant is unavailable right now. ${message}`, {
       status: 500,
     });
   }

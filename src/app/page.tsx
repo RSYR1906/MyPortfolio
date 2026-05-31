@@ -50,6 +50,11 @@ export default function Home() {
     setSidebarOpen(false);
   }
 
+  function handlePortfolioClick() {
+    setView("dashboard");
+    setSidebarOpen(false);
+  }
+
   // Loading screen — shown until Supabase data is ready
   if (!ready) {
     return (
@@ -110,6 +115,7 @@ export default function Home() {
         <AssetSidebar
           onTradeClick={(ticker) => setTradeModalTicker(ticker)}
           onClose={() => setSidebarOpen(false)}
+          onPortfolioClick={handlePortfolioClick}
           onSelect={handleSelectTicker}
         />
       </div>

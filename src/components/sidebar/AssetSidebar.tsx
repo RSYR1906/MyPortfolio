@@ -18,11 +18,18 @@ interface Props {
   onTradeClick: (ticker: string) => void;
   /** Called when the mobile close (✕) button is pressed. */
   onClose?: () => void;
+  /** Called when the Portfolio title is pressed. */
+  onPortfolioClick?: () => void;
   /** Called (in addition to setSelectedTicker) when an asset row is activated. */
   onSelect?: (ticker: string) => void;
 }
 
-export function AssetSidebar({ onTradeClick, onClose, onSelect }: Props) {
+export function AssetSidebar({
+  onTradeClick,
+  onClose,
+  onPortfolioClick,
+  onSelect,
+}: Props) {
   const assets = useAssetStore((s) => s.assets);
   const router = useRouter();
 
@@ -254,9 +261,12 @@ export function AssetSidebar({ onTradeClick, onClose, onSelect }: Props) {
         <div className="px-4 pt-safe pb-4 border-b border-white/10 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-gray-100 tracking-tight">
+              <button
+                onClick={onPortfolioClick}
+                className="text-base font-bold text-gray-100 tracking-tight hover:text-blue-300 transition-colors"
+              >
                 Portfolio
-              </h1>
+              </button>
               {/* Currency toggle */}
               <div className="flex items-center rounded overflow-hidden border border-white/10 text-[10px] font-semibold">
                 {(["USD", "SGD"] as const).map((c) => (

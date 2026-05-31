@@ -74,9 +74,11 @@ Your job:
 
 export async function POST(req: Request) {
   const ip = getRequestIp((await headers()).get("x-forwarded-for"));
-  const { allowed } = checkRateLimit(ip);
+  const { allowed } = checkRateLimit(`chat:${ip}`);
   if (!allowed) {
-    return new Response("Rate limit exceeded", { status: 429 });
+    return new Response("Too many chat requests. Please wait and try again.", {
+      status: 429,
+    });
   }
 
   const { messages, assets, holdings } =

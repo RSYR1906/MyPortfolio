@@ -71,6 +71,28 @@ interface Props {
   onClose: () => void;
 }
 
+function getErrorText(error: unknown): string {
+  const raw =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : "";
+  const message = raw.toLowerCase();
+
+  if (message.includes("429") || message.includes("too many")) {
+    return "Too many assistant requests right now. Please wait a moment and try again.";
+  }
+  if (message.includes("401") || message.includes("403")) {
+    return "Assistant authentication failed. Check your Google AI API key restrictions.";
+  }
+  if (message.includes("failed to fetch") || message.includes("network")) {
+    return "Network error while reaching the assistant. Check your connection and try again.";
+  }
+
+  return "Assistant is temporarily unavailable. Please try again.";
+}
+
 export function ChatPanel({ onClose }: Props) {
   const assets = useAssetStore((s) => s.assets);
   const addTransaction = useAssetStore((s) => s.addTransaction);
@@ -258,8 +280,7 @@ export function ChatPanel({ onClose }: Props) {
         {error && (
           <div className="flex justify-start">
             <div className="max-w-[85%] rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm leading-relaxed bg-red-500/10 border border-red-500/30 text-red-300">
-              Unable to reach the assistant right now. Check your API key and
-              try again.
+              {getErrorText(error)}
             </div>
           </div>
         )}

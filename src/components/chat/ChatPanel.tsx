@@ -15,6 +15,58 @@ interface Trade {
   date: string;
 }
 
+interface TextPart {
+  type: "text";
+  text: string;
+}
+
+interface TradeToolPart {
+  type: string;
+  toolName?: string;
+  toolCallId: string;
+  state?: string;
+  output: Trade;
+}
+
+const EXAMPLE_PROMPTS = [
+  "I bought 10 shares of NVDA at $120",
+  "Sold 5 AAPL at $195 yesterday",
+  "Add 3 shares of SPY at $580 on May 1st",
+];
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isTrade(value: unknown): value is Trade {
+  if (!isObject(value)) return false;
+  return (
+    typeof value.ticker === "string" &&
+    (value.type === "buy" || value.type === "sell") &&
+    typeof value.shares === "number" &&
+    typeof value.pricePerShare === "number" &&
+    typeof value.date === "string"
+  );
+}
+
+function isTextPart(part: unknown): part is TextPart {
+  if (!isObject(part)) return false;
+  return part.type === "text" && typeof part.text === "string";
+}
+
+function isRecordTradeOutputPart(part: unknown): part is TradeToolPart {
+  if (!isObject(part)) return false;
+  const { type, toolName, state } = part;
+  return (
+    typeof part.toolCallId === "string" &&
+    typeof type === "string" &&
+    (type === "tool-record_trade" ||
+      (type === "dynamic-tool" && toolName === "record_trade")) &&
+    state === "output-available" &&
+    isTrade(part.output)
+  );
+}
+
 interface Props {
   onClose: () => void;
 }
@@ -44,7 +96,7 @@ export function ChatPanel({ onClose }: Props) {
     }),
   );
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, error } = useChat({
     transport: transportRef.current,
   });
 
@@ -114,14 +166,13 @@ export function ChatPanel({ onClose }: Props) {
               Ask me to record a trade, e.g.
             </p>
             <div className="space-y-1.5 w-full">
-              {[
-                "I bought 10 shares of NVDA at $120",
-                "Sold 5 AAPL at $195 yesterday",
-                "Add 3 shares of SPY at $580 on May 1st",
-              ].map((ex) => (
+              {EXAMPLE_PROMPTS.map((ex) => (
                 <button
                   key={ex}
-                  onClick={() => setInput(ex)}
+                  onClick={() => {
+                    if (isLoading) return;
+                    sendMessage({ text: ex });
+                  }}
                   className="w-full text-left text-xs text-gray-500 hover:text-gray-300 hover:bg-white/5 rounded-lg px-3 py-2 transition-colors border border-white/5"
                 >
                   &ldquo;{ex}&rdquo;
@@ -136,35 +187,24 @@ export function ChatPanel({ onClose }: Props) {
 
           // Extract text from parts
           const textContent = msg.parts
-            .filter(
-              (p): p is { type: "text"; text: string } & typeof p =>
-                p.type === "text",
-            )
-            .map((p) => (p as unknown as { text: string }).text)
+            .filter(isTextPart)
+            .map((p) => p.text)
             .join("");
 
           // Collect unhandled record_trade tool invocations (output-available state).
           // Static tools from streamText arrive as type 'tool-{name}'; dynamic tools
           // arrive as type 'dynamic-tool' with a toolName field.
-          const pendingTrades =
+          const pendingTrades: TradeToolPart[] =
             msg.role === "assistant"
-              ? msg.parts.filter((p) => {
-                  const part = p as {
-                    type: string;
-                    toolCallId?: string;
-                    toolName?: string;
-                    state?: string;
-                  };
-                  const isOurTool =
-                    part.type === "tool-record_trade" ||
-                    (part.type === "dynamic-tool" &&
-                      part.toolName === "record_trade");
-                  return (
-                    isOurTool &&
-                    part.state === "output-available" &&
-                    !handled.has(part.toolCallId ?? "")
-                  );
-                })
+              ? msg.parts.reduce<TradeToolPart[]>((acc, part) => {
+                  if (
+                    isRecordTradeOutputPart(part) &&
+                    !handled.has(part.toolCallId)
+                  ) {
+                    acc.push(part);
+                  }
+                  return acc;
+                }, [])
               : [];
 
           return (
@@ -186,16 +226,14 @@ export function ChatPanel({ onClose }: Props) {
               )}
 
               {pendingTrades.map((part) => {
-                const p = part as unknown as {
-                  toolCallId: string;
-                  output: Trade;
-                };
                 return (
                   <TradeConfirmCard
-                    key={p.toolCallId}
-                    trade={p.output}
-                    onConfirm={() => handleConfirm(p.toolCallId, p.output)}
-                    onCancel={() => handleCancel(p.toolCallId)}
+                    key={part.toolCallId}
+                    trade={part.output}
+                    onConfirm={() =>
+                      handleConfirm(part.toolCallId, part.output)
+                    }
+                    onCancel={() => handleCancel(part.toolCallId)}
                   />
                 );
               })}
@@ -213,6 +251,15 @@ export function ChatPanel({ onClose }: Props) {
                   style={{ animationDelay: `${i * 0.15}s` }}
                 />
               ))}
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex justify-start">
+            <div className="max-w-[85%] rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm leading-relaxed bg-red-500/10 border border-red-500/30 text-red-300">
+              Unable to reach the assistant right now. Check your API key and
+              try again.
             </div>
           </div>
         )}

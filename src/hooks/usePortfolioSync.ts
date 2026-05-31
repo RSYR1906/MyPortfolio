@@ -6,6 +6,49 @@ import { useAssetStore } from '@/store/useAssetStore';
 import type { Asset, Transaction } from '@/types';
 import { useEffect, useRef, useState } from 'react';
 
+interface SupabaseTransactionRow {
+  id: string;
+  ticker: string;
+  type: 'buy' | 'sell';
+  shares: number;
+  price_per_share: number;
+  date: string;
+}
+
+function logSyncError(context: string, err: unknown) {
+  console.error(`Portfolio sync: ${context}`, err);
+}
+
+function mapTransactionRow(row: SupabaseTransactionRow): Transaction {
+  return {
+    id: row.id,
+    ticker: row.ticker,
+    type: row.type,
+    shares: row.shares,
+    pricePerShare: row.price_per_share,
+    date: row.date,
+  };
+}
+
+async function loadQuotesForAssets(assets: Asset[]) {
+  const tickers = assets.map((a) => a.ticker);
+  if (tickers.length === 0) return;
+
+  try {
+    const res = await fetch(
+      `/api/quotes?tickers=${encodeURIComponent(tickers.join(','))}`,
+    );
+    if (!res.ok) {
+      logSyncError(`quote bootstrap failed (${res.status})`, null);
+      return;
+    }
+    const data = await res.json();
+    useAssetStore.getState().initPrices(data);
+  } catch (err) {
+    logSyncError('quote bootstrap failed', err);
+  }
+}
+
 /**
  * Loads the user's portfolio from Supabase on mount, then subscribes to
  * in-memory store changes and writes them back to Supabase.
@@ -46,30 +89,20 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
       const notes: Record<string, string> =
         (portfolioRes.data?.notes as Record<string, string> | null) ?? {};
 
-      const transactions: Transaction[] = (txRes.data ?? []).map((row) => ({
-        id: row.id as string,
-        ticker: row.ticker as string,
-        type: row.type as 'buy' | 'sell',
-        shares: row.shares as number,
-        pricePerShare: row.price_per_share as number,
-        date: row.date as string,
-      }));
+      const transactions: Transaction[] = ((txRes.data ?? []) as SupabaseTransactionRow[])
+        .map(mapTransactionRow);
 
       useAssetStore.getState().loadPortfolio(assets, transactions, selectedTicker, notes);
 
       // Fetch REST quotes for all loaded assets
-      const tickers = assets.map((a) => a.ticker).join(',');
-      fetch(`/api/quotes?tickers=${encodeURIComponent(tickers)}`)
-        .then((r) => r.json())
-        .then((data) => useAssetStore.getState().initPrices(data))
-        .catch(console.error);
+      await loadQuotesForAssets(assets);
 
       initialLoadDone.current = true;
       setReady(true);
     }
 
     load().catch((err) => {
-      console.error(err);
+      logSyncError('initial load failed', err);
       setError('Failed to load portfolio. Please refresh.');
       setReady(true); // unblock the loading spinner
     });
@@ -81,7 +114,7 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
 
     const supabase = createClient();
 
-    const unsub = useAssetStore.subscribe((state, prevState) => {
+    return useAssetStore.subscribe((state, prevState) => {
       // Guard: don't write during the initial load itself
       if (!initialLoadDone.current) return;
 
@@ -100,7 +133,7 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
             date: newTx.date,
           })
           .then(({ error }) => {
-            if (error) console.error('Failed to save transaction:', error);
+            if (error) logSyncError('failed to save transaction', error);
           });
       }
 
@@ -115,7 +148,7 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
               .delete()
               .eq('id', id)
               .then(({ error }) => {
-                if (error) console.error('Failed to delete transaction:', error);
+                if (error) logSyncError('failed to delete transaction', error);
               });
           }
         }
@@ -137,12 +170,11 @@ export function usePortfolioSync(userId: string | null): { ready: boolean; error
             updated_at: new Date().toISOString(),
           })
           .then(({ error }) => {
-            if (error) console.error('Failed to save portfolio:', error);
+            if (error) logSyncError('failed to save portfolio', error);
           });
       }
     });
 
-    return unsub;
   }, [userId]);
 
   return { ready, error };

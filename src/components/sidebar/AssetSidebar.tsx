@@ -1,8 +1,10 @@
 "use client";
 
 import type { SearchResult } from "@/app/api/search/route";
+import { EtfBadge } from "@/components/common/AssetVisuals";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { maskIfHidden } from "@/lib/display";
 import { createClient } from "@/lib/supabase/client";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useCurrencyStore } from "@/store/useCurrencyStore";
@@ -30,7 +32,6 @@ export function AssetSidebar({ onTradeClick, onClose, onSelect }: Props) {
   const { currency, fmt, fmtPnL } = useCurrency();
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
   const balanceHidden = useCurrencyStore((s) => s.balanceHidden);
-  const MASK = "••••";
 
   const [portfolioOpen, setPortfolioOpen] = useState(false);
 
@@ -146,19 +147,43 @@ export function AssetSidebar({ onTradeClick, onClose, onSelect }: Props) {
     if (e.key === "Enter") handleWatch();
   }
 
-  function selectSuggestion(result: SearchResult) {
-    setAddInput(result.ticker);
+  async function openTickerFromSearch(entry: {
+    ticker: string;
+    name?: string;
+  }) {
+    const sym = entry.ticker.trim().toUpperCase();
+    if (!sym) return;
+
     setSuggestionsOpen(false);
     setActiveIndex(-1);
     setSuggestions([]);
-    inputRef.current?.focus();
+    setAddInput("");
+
+    const existing = assets.find((a) => a.ticker === sym);
+    if (existing) {
+      pushRecent({ ticker: existing.ticker, name: existing.name });
+      useAssetStore.getState().setSelectedTicker(sym);
+      onSelect?.(sym);
+      return;
+    }
+
+    const asset = await addTicker(sym, true);
+    if (!asset) return;
+
+    pushRecent({
+      ticker: asset.ticker,
+      name: asset.name || entry.name || asset.ticker,
+    });
+    useAssetStore.getState().setSelectedTicker(asset.ticker);
+    onSelect?.(asset.ticker);
+  }
+
+  function selectSuggestion(result: SearchResult) {
+    void openTickerFromSearch({ ticker: result.ticker, name: result.name });
   }
 
   function selectRecent(r: { ticker: string; name: string }) {
-    setAddInput(r.ticker);
-    setSuggestionsOpen(false);
-    setActiveIndex(-1);
-    inputRef.current?.focus();
+    void openTickerFromSearch(r);
   }
 
   async function addTicker(
@@ -390,9 +415,7 @@ export function AssetSidebar({ onTradeClick, onClose, onSelect }: Props) {
                         </span>
                         <span className="flex items-center gap-1.5 shrink-0">
                           {s.type === "etf" && (
-                            <span className="text-[10px] px-1 py-0.5 rounded bg-white/10 text-gray-400">
-                              ETF
-                            </span>
+                            <EtfBadge className="text-[10px] px-1 py-0.5" />
                           )}
                           <span className="text-[10px] text-gray-600 uppercase">
                             {s.exchange}
@@ -455,12 +478,12 @@ export function AssetSidebar({ onTradeClick, onClose, onSelect }: Props) {
             </p>
             <div className="flex items-center justify-between mt-1">
               <span className="text-sm font-mono text-gray-100">
-                {balanceHidden ? MASK : fmt(totalValue)}
+                {maskIfHidden(balanceHidden, fmt(totalValue))}
               </span>
               <span
                 className={`text-sm font-mono ${totalPnL >= 0 ? "text-emerald-400" : "text-red-400"}`}
               >
-                {balanceHidden ? MASK : fmtPnL(totalPnL)}
+                {maskIfHidden(balanceHidden, fmtPnL(totalPnL))}
               </span>
             </div>
           </button>

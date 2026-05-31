@@ -7,32 +7,53 @@ import { z } from "zod";
 
 export const maxDuration = 30;
 
-export async function POST(req: Request) {
-  const ip =
-    (await headers()).get("x-forwarded-for")?.split(",")[0].trim() ??
-    "127.0.0.1";
-  const { allowed } = checkRateLimit(ip);
-  if (!allowed) {
-    return new Response("Rate limit exceeded", { status: 429 });
-  }
+interface AssetContext {
+  ticker: string;
+  name: string;
+}
 
-  const { messages, assets, holdings }: { messages: UIMessage[]; assets: { ticker: string; name: string }[]; holdings: Record<string, { netShares: number; avgCostBasis: number }> } = await req.json();
+interface HoldingContext {
+  netShares: number;
+  avgCostBasis: number;
+}
 
-  // Build a concise portfolio context string for the system prompt
-  const today = new Date().toISOString().split("T")[0];
+interface ChatRequestBody {
+  messages: UIMessage[];
+  assets: AssetContext[];
+  holdings: Record<string, HoldingContext>;
+}
 
-  const assetLines: string[] = (assets ?? []).map(
-    (a: { ticker: string; name: string }) => `  - ${a.ticker} (${a.name})`,
-  );
+const RECORD_TRADE_SCHEMA = z.object({
+  ticker: z
+    .string()
+    .describe("The official stock/ETF ticker symbol (e.g. NVDA, AAPL)"),
+  type: z.enum(["buy", "sell"]).describe("Whether this is a buy or sell"),
+  shares: z.number().positive().describe("Number of shares bought or sold"),
+  pricePerShare: z.number().positive().describe("Price per share in USD"),
+  date: z
+    .string()
+    .optional()
+    .describe("ISO date string (YYYY-MM-DD). Defaults to today if omitted."),
+});
 
-  const holdingLines: string[] = Object.entries(
-    holdings ?? {},
-  ).map(([ticker, h]) => {
-    const holding = h as { netShares: number; avgCostBasis: number };
-    return `  - ${ticker}: ${holding.netShares} shares @ avg $${holding.avgCostBasis.toFixed(2)}`;
+function getRequestIp(forwardedFor: string | null): string {
+  if (!forwardedFor) return "127.0.0.1";
+  const [firstIp] = forwardedFor.split(",");
+  return firstIp.trim();
+}
+
+function buildSystemPrompt(
+  today: string,
+  assets: AssetContext[] = [],
+  holdings: Record<string, HoldingContext> = {},
+): string {
+  const assetLines = assets.map((a) => `  - ${a.ticker} (${a.name})`);
+
+  const holdingLines = Object.entries(holdings).map(([ticker, h]) => {
+    return `  - ${ticker}: ${h.netShares} shares @ avg $${h.avgCostBasis.toFixed(2)}`;
   });
 
-  const systemPrompt = `You are a helpful portfolio assistant. Today's date is ${today}.
+  return `You are a helpful portfolio assistant. Today's date is ${today}.
 
 The user's tracked assets are:
 ${assetLines.length ? assetLines.join("\n") : "  (none yet)"}
@@ -49,44 +70,54 @@ Your job:
 - Confirm ambiguous details before calling the tool.
 - Keep responses concise and friendly.
 - Do NOT call record_trade for sell transactions that would result in more shares sold than held.`;
+}
 
-  const result = streamText({
-    model: google("gemini-2.0-flash"),
-    system: systemPrompt,
-    messages: await convertToModelMessages(messages),
-    stopWhen: stepCountIs(3),
-    tools: {
-      record_trade: tool({
-        description:
-          "Record a buy or sell transaction in the user's portfolio. Call this after confirming the trade details with the user.",
-        inputSchema: z.object({
-          ticker: z
-            .string()
-            .describe("The official stock/ETF ticker symbol (e.g. NVDA, AAPL)"),
-          type: z.enum(["buy", "sell"]).describe("Whether this is a buy or sell"),
-          shares: z
-            .number()
-            .positive()
-            .describe("Number of shares bought or sold"),
-          pricePerShare: z
-            .number()
-            .positive()
-            .describe("Price per share in USD"),
-          date: z
-            .string()
-            .optional()
-            .describe(
-              "ISO date string (YYYY-MM-DD). Defaults to today if omitted.",
-            ),
+export async function POST(req: Request) {
+  const ip = getRequestIp((await headers()).get("x-forwarded-for"));
+  const { allowed } = checkRateLimit(ip);
+  if (!allowed) {
+    return new Response("Rate limit exceeded", { status: 429 });
+  }
+
+  const { messages, assets, holdings } =
+    (await req.json()) as ChatRequestBody;
+
+  // Build a concise portfolio context string for the system prompt
+  const today = new Date().toISOString().split("T")[0];
+  const systemPrompt = buildSystemPrompt(today, assets, holdings);
+
+  try {
+    const result = streamText({
+      model: google("gemini-2.5-flash"),
+      system: systemPrompt,
+      messages: await convertToModelMessages(messages),
+      stopWhen: stepCountIs(3),
+      tools: {
+        record_trade: tool({
+          description:
+            "Record a buy or sell transaction in the user's portfolio. Call this after confirming the trade details with the user.",
+          inputSchema: RECORD_TRADE_SCHEMA,
+          execute: async ({ ticker, type, shares, pricePerShare, date }) => {
+            // The actual addTransaction call happens client-side after user confirms.
+            // This just echoes back the parsed trade for the confirmation card.
+            const tradeDate = typeof date === "string" && date ? date : today;
+            return {
+              ticker: ticker.toUpperCase(),
+              type,
+              shares,
+              pricePerShare,
+              date: tradeDate,
+            };
+          },
         }),
-        execute: async ({ ticker, type, shares, pricePerShare, date }) => {
-          // The actual addTransaction call happens client-side after user confirms.
-          // This just echoes back the parsed trade for the confirmation card.
-          return { ticker: ticker.toUpperCase(), type, shares, pricePerShare, date: date ?? today };
-        },
-      }),
-    },
-  });
+      },
+    });
 
-  return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error("Chat route failed", error);
+    return new Response("AI assistant is unavailable right now.", {
+      status: 500,
+    });
+  }
 }

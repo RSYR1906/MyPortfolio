@@ -1,7 +1,9 @@
 "use client";
 
+import { AssetDot, EtfBadge } from "@/components/common/AssetVisuals";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { formatShareLabel, maskIfHidden } from "@/lib/display";
 import { formatPct } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useCurrencyStore } from "@/store/useCurrencyStore";
@@ -19,7 +21,6 @@ export function DashboardView({ onSelect, onTradeClick }: Props) {
   const balanceHidden = useCurrencyStore((s) => s.balanceHidden);
   const toggleBalanceHidden = useCurrencyStore((s) => s.toggleBalanceHidden);
 
-  const MASK = "••••";
   const totalPnL = totalValue - totalCost;
   const totalPnLPct = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
 
@@ -72,7 +73,7 @@ export function DashboardView({ onSelect, onTradeClick }: Props) {
         </div>
         <div className="flex items-end gap-3">
           <span className="text-2xl font-mono font-bold text-gray-100">
-            {balanceHidden ? MASK : fmt(totalValue)}
+            {maskIfHidden(balanceHidden, fmt(totalValue))}
           </span>
           {totalCost > 0 && !balanceHidden && (
             <span
@@ -115,17 +116,12 @@ export function DashboardView({ onSelect, onTradeClick }: Props) {
               {/* Ticker row */}
               <div className="flex items-center justify-between gap-1 mb-1">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: accentColor }}
-                  />
+                  <AssetDot accentColor={accentColor} className="w-2 h-2" />
                   <span className="text-sm font-bold text-gray-100 leading-none">
                     {ticker}
                   </span>
                   {type === "etf" && (
-                    <span className="text-[9px] px-1 py-px rounded bg-white/10 text-gray-400 leading-none">
-                      ETF
-                    </span>
+                    <EtfBadge className="text-[9px] px-1 py-px leading-none" />
                   )}
                 </div>
                 {priceData && (
@@ -166,9 +162,13 @@ export function DashboardView({ onSelect, onTradeClick }: Props) {
                   <>
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] text-gray-500">
-                        {balanceHidden
-                          ? MASK
-                          : `${holding.netShares % 1 === 0 ? holding.netShares : holding.netShares.toFixed(2)} sh`}
+                        {maskIfHidden(
+                          balanceHidden,
+                          formatShareLabel(holding.netShares, {
+                            fractionalDigits: 2,
+                            suffix: "sh",
+                          }),
+                        )}
                       </span>
                       <span className="text-[11px] font-mono text-gray-300">
                         {balanceHidden ? "" : fmt(pnl.currentValue)}

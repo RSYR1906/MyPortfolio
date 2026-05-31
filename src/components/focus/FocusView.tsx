@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  AssetDot,
+  EtfBadge,
+  SectionHeading,
+} from "@/components/common/AssetVisuals";
 import { TradeForm } from "@/components/trade/TradeForm";
 import { TransactionHistory } from "@/components/trade/TransactionHistory";
 import { useCandles } from "@/hooks/useCandles";
@@ -7,6 +12,7 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { useNews } from "@/hooks/useNews";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useSwipe } from "@/hooks/useSwipe";
+import { formatShareCount } from "@/lib/display";
 import { formatPct } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import type { Timeframe } from "@/types";
@@ -82,17 +88,12 @@ export function FocusView() {
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
             <div>
               <div className="flex items-center gap-3">
-                <span
-                  className="w-3 h-3 rounded-full shrink-0"
-                  style={{ backgroundColor: asset.accentColor }}
-                />
+                <AssetDot accentColor={asset.accentColor} className="w-3 h-3" />
                 <h2 className="text-lg sm:text-xl font-bold text-gray-100">
                   {ticker}
                 </h2>
                 {asset.type === "etf" && (
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-gray-400">
-                    ETF
-                  </span>
+                  <EtfBadge className="text-xs px-1.5 py-0.5" />
                 )}
               </div>
               <p className="text-sm text-gray-500 mt-0.5 ml-6">{asset.name}</p>
@@ -122,10 +123,7 @@ export function FocusView() {
               <span className="text-gray-500">
                 Holding:{" "}
                 <span className="text-gray-300 font-mono">
-                  {holding.netShares % 1 === 0
-                    ? holding.netShares
-                    : holding.netShares.toFixed(4)}{" "}
-                  shares
+                  {formatShareCount(holding.netShares)} shares
                 </span>
               </span>
               <span className="text-gray-500">
@@ -181,9 +179,7 @@ export function FocusView() {
           {/* Chart */}
           <div className="rounded-xl border border-white/10 bg-white/2 p-4">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Chart
-              </h3>
+              <SectionHeading>Chart</SectionHeading>
               <TimeframeSelector value={timeframe} onChange={setTimeframe} />
             </div>
             <div className="h-56 sm:h-64 md:h-80">
@@ -213,16 +209,12 @@ export function FocusView() {
         <div className={mobileTab !== "trade" ? "hidden md:block" : ""}>
           {/* Notes */}
           <div className="rounded-xl border border-white/10 bg-white/2 p-4 mb-6">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-              Notes
-            </h3>
+            <SectionHeading className="mb-2">Notes</SectionHeading>
             <PositionNotes ticker={ticker} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="rounded-xl border border-white/10 bg-white/2 p-4 space-y-4">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Trade
-              </h3>
+              <SectionHeading>Trade</SectionHeading>
               <TradeForm ticker={ticker} />
             </div>
             <TransactionHistory ticker={ticker} />

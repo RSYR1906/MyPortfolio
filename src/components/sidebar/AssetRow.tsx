@@ -1,6 +1,8 @@
 "use client";
 
+import { AssetDot, EtfBadge } from "@/components/common/AssetVisuals";
 import { useCurrency } from "@/hooks/useCurrency";
+import { formatShareLabel, maskIfHidden } from "@/lib/display";
 import { formatPct } from "@/lib/portfolio";
 import { useAssetStore } from "@/store/useAssetStore";
 import { useCurrencyStore } from "@/store/useCurrencyStore";
@@ -38,7 +40,6 @@ export function AssetRow({
 
   const { fmt, fmtPnL } = useCurrency();
   const balanceHidden = useCurrencyStore((s) => s.balanceHidden);
-  const MASK = "••••";
 
   // Flash animation on price change
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
@@ -83,19 +84,14 @@ export function AssetRow({
       <div className="flex items-center justify-between">
         {/* Left: accent dot + ticker */}
         <div className="flex items-center gap-2 min-w-0">
-          <span
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: accentColor }}
-          />
+          <AssetDot accentColor={accentColor} className="w-2 h-2" />
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
               <span className="text-sm font-semibold text-gray-100">
                 {ticker}
               </span>
               {asset.type === "etf" && (
-                <span className="text-[10px] px-1 py-0.5 rounded bg-white/10 text-gray-400">
-                  ETF
-                </span>
+                <EtfBadge className="text-[10px] px-1 py-0.5" />
               )}
             </div>
             <p className="text-[11px] text-gray-500 truncate max-w-30">
@@ -142,18 +138,17 @@ export function AssetRow({
       {holding && pnl && (
         <div className="flex items-center justify-between mt-0.5 pl-4">
           <span className="text-[11px] text-gray-500">
-            {balanceHidden
-              ? MASK
-              : `${holding.netShares % 1 === 0 ? holding.netShares : holding.netShares.toFixed(4)} shares`}
+            {maskIfHidden(balanceHidden, formatShareLabel(holding.netShares))}
           </span>
           <span
             className={`text-[11px] font-mono ${
               pnl.unrealizedPnL >= 0 ? "text-emerald-400" : "text-red-400"
             }`}
           >
-            {balanceHidden
-              ? MASK
-              : `${fmtPnL(pnl.unrealizedPnL)} (${formatPct(pnl.unrealizedPnLPct)})`}
+            {maskIfHidden(
+              balanceHidden,
+              `${fmtPnL(pnl.unrealizedPnL)} (${formatPct(pnl.unrealizedPnLPct)})`,
+            )}
           </span>
         </div>
       )}
